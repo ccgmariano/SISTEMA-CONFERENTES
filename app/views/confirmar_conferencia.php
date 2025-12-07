@@ -8,7 +8,7 @@ require_once __DIR__ . '/header.php';
     <ul class="list-group mb-4">
         <li class="list-group-item"><strong>Navio:</strong> <?= htmlspecialchars($navio) ?></li>
         <li class="list-group-item"><strong>Início:</strong> <?= htmlspecialchars($inicio) ?></li>
-        <li class-group-item><strong>Fim:</strong> <?= htmlspecialchars($fim) ?></li>
+        <li class="list-group-item"><strong>Fim:</strong> <?= htmlspecialchars($fim) ?></li>
         <li class="list-group-item"><strong>Produto:</strong> <?= htmlspecialchars($produto) ?></li>
         <li class="list-group-item"><strong>Recinto:</strong> <?= htmlspecialchars($recinto) ?></li>
     </ul>
