@@ -1,9 +1,9 @@
 <?php
+require_once __DIR__ . '/config.php';
 
-session_start();
+if (!isset($_SESSION['user'])) {
+    header("Location: /login.php");
+    exit;
+}
 
-define('BASE_URL', 'https://sistema-conferentes.onrender.com/');
-
-// Configurações futuras podem ser adicionadas aqui
-
-?>
+require_once __DIR__ . '/app/views/dashboard.php';
