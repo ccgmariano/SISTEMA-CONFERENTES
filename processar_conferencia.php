@@ -6,32 +6,28 @@ if (!is_logged_in()) {
     exit;
 }
 
-// Verifica se veio via POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header("Location: /nova_conferencia.php");
     exit;
 }
 
-// Captura os dados do formulário
 $navio   = trim($_POST['navio'] ?? '');
 $inicio  = trim($_POST['inicio'] ?? '');
 $fim     = trim($_POST['fim'] ?? '');
 $produto = trim($_POST['produto'] ?? '');
 $recinto = trim($_POST['recinto'] ?? '');
 
-// Validação simples
 $erros = [];
 
-if ($navio === '')   $erros[] = "Informe o nome do navio.";
+if ($navio === '')   $erros[] = "Informe o navio.";
 if ($inicio === '')  $erros[] = "Informe a data/hora de início.";
 if ($fim === '')     $erros[] = "Informe a data/hora de fim.";
 if ($produto === '') $erros[] = "Informe o produto.";
 if ($recinto === '') $erros[] = "Informe o recinto.";
 
-// Exibe erros se houver
 include __DIR__ . '/app/views/header.php';
 
-echo "<h2>Nova Conferência – Revisão</h2>";
+echo "<h2>Revisão da Conferência</h2>";
 
 if ($erros) {
     echo "<div class='erro'><ul>";
@@ -39,16 +35,16 @@ if ($erros) {
         echo "<li>$e</li>";
     }
     echo "</ul></div>";
+
     echo "<p><a href='/nova_conferencia.php'>Voltar</a></p>";
 } else {
-    // Aqui futuramente salvaremos no banco ou geraremos arquivo
     echo "<p><strong>Navio:</strong> $navio</p>";
     echo "<p><strong>Início:</strong> $inicio</p>";
     echo "<p><strong>Fim:</strong> $fim</p>";
     echo "<p><strong>Produto:</strong> $produto</p>";
     echo "<p><strong>Recinto:</strong> $recinto</p>";
 
-    echo "<p>✔ Dados recebidos com sucesso! (Falta salvar/gerar arquivo)</p>";
+    echo "<br><p>✔ Dados recebidos! (Em breve salvaremos no banco ou geraremos arquivo)</p>";
 }
 
 include __DIR__ . '/app/views/footer.php';
