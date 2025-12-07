@@ -17,4 +17,5 @@ if (!$navio || !$inicio || !$fim || !$produto || !$recinto) {
 }
 
 // Envia dados para a view da tabela
-require_once __DIR__ . '/../views/tabela_conferencia.php';
+require_once __DIR__ . '/../views/conferencia_tabela.php';
+
