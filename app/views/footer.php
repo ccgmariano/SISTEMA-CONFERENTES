@@ -1,9 +1,8 @@
-</main>
+    </main>
 
-    <footer class="page-footer">
-        <small>Sistema Conferentes PLUS • Versão 0.1</small>
-    </footer>
-
-    <script src="/assets/js/app.js"></script>
+    <!-- Bootstrap JS -->
+    <script 
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
+    </script>
 </body>
 </html>
