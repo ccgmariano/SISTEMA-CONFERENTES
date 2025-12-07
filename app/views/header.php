@@ -35,7 +35,7 @@
         <?php if (is_logged_in()): ?>
             <nav class="d-flex gap-3">
                 <a class="text-white text-decoration-none" href="/dashboard.php">Dashboard</a>
-                <a class="text-white text-decoration-none" href="/nova_conferencia.php">Nova Conferência</a>
+                <a class="text-white text-decoration-none" href="/app/views/nova_conferencia.php">Nova Conferência</a>
                 <a class="text-white text-decoration-none" href="/logout.php">Sair</a>
             </nav>
         <?php endif; ?>
