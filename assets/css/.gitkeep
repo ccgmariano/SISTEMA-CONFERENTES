@@ -1,0 +1,23 @@
+/assets
+    /css
+    /js
+    /img
+
+/views
+    header.php
+    footer.php
+    menu.php
+
+/controllers
+    auth.php
+    dashboard.php
+
+/config
+    config.php
+
+/login.php
+/dashboard.php
+/captura.php
+/manual.php
+/relatorios.php
+/index.php
