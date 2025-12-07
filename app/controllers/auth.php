@@ -1,22 +1,23 @@
 <?php
+require_once __DIR__ . '/../../config.php';
 
-class Auth {
+// LOGIN SIMPLES – depois conectaremos o Poseidon
+$usuariosValidos = [
+    'admin' => '1234',
+    'cristiano' => '1234'
+];
 
-    public static function login($usuario, $senha) {
+$user = $_POST['usuario'] ?? '';
+$pass = $_POST['senha'] ?? '';
 
-        if ($usuario === USER && $senha === PASS) {
-            $_SESSION['logged_in'] = true;
-            return true;
-        }
+if (isset($usuariosValidos[$user]) && $usuariosValidos[$user] === $pass) {
+    
+    $_SESSION['user'] = $user;
 
-        return false;
-    }
+    header("Location: /dashboard.php");
+    exit;
 
-    public static function check() {
-        return isset($_SESSION['logged_in']);
-    }
-
-    public static function logout() {
-        session_destroy();
-    }
+} else {
+    header("Location: /login.php?erro=1");
+    exit;
 }
