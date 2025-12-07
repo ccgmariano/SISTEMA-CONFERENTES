@@ -13,7 +13,9 @@ require_once __DIR__ . '/header.php';
         <li class="list-group-item"><strong>Recinto:</strong> <?= htmlspecialchars($recinto) ?></li>
     </ul>
 
-    <p>Em seguida implementaremos a consulta automática no Poseidon com esses dados.</p>
+    <p class="mb-4">
+        Em seguida implementaremos a consulta automática ao Poseidon usando esses dados.
+    </p>
 
     <a class="btn btn-secondary w-100" href="/app/views/nova_conferencia.php">Voltar</a>
 </div>
