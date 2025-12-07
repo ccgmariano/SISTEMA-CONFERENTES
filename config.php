@@ -1,9 +1,15 @@
 <?php
-require_once __DIR__ . '/config.php';
+session_start();
 
-if (!isset($_SESSION['user'])) {
-    header("Location: /login.php");
-    exit;
+// Caminhos importantes do projeto
+define('BASE_PATH', __DIR__);
+define('VIEW_PATH', BASE_PATH . '/app/views/');
+define('CONTROLLER_PATH', BASE_PATH . '/app/controllers/');
+
+// Função simples de proteção de página
+function proteger() {
+    if (!isset($_SESSION['user'])) {
+        header("Location: /login.php");
+        exit;
+    }
 }
-
-require_once __DIR__ . '/app/views/dashboard.php';
