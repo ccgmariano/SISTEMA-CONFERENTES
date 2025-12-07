@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/../../config.php'; ?>
+<?php require_once __DIR__ . '/config.php'; ?>
 <!doctype html>
 <html lang="pt-BR">
 <head>
@@ -8,18 +8,24 @@
     <link rel="stylesheet" href="/assets/css/style.css">
 </head>
 <body>
+
     <header class="topbar">
         <div class="topbar-inner">
-            <div class="brand"><?php echo APP_NAME; ?></div>
+
+            <div class="brand">
+                <?php echo APP_NAME; ?>
+            </div>
 
             <?php if (is_logged_in()): ?>
                 <nav class="topbar-nav">
 
+                    <!-- Dashboard -->
                     <a href="/dashboard.php">Dashboard</a>
 
-                    <!-- NOVO LINK PARA CRIAR CONFERÊNCIA -->
+                    <!-- NOVA CONFERÊNCIA -->
                     <a href="/app/views/nova_conferencia.php">Nova Conferência</a>
 
+                    <!-- Logout -->
                     <a href="/logout.php">Sair</a>
 
                 </nav>
