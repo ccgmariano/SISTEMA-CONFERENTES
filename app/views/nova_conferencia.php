@@ -5,7 +5,7 @@ require_once __DIR__ . '/header.php';
 <div class="container mt-5" style="max-width: 600px;">
     <h3 class="mb-4">Nova Conferência</h3>
 
-    <form method="POST" action="/app/controllers/conferencia_controller.php">
+   <form method="POST" action="/processar_conferencia.php">
 
         <div class="mb-3">
             <label class="form-label">Navio</label>
