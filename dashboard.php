@@ -1,81 +1,66 @@
 <?php
 require_once __DIR__ . '/config.php';
 require_login();
-
-// Carrega operação atual (se existir)
-$operacao = $_SESSION['operacao_atual'] ?? null;
-
-// Carrega períodos já criados
-$periodos = $_SESSION['periodos'] ?? [];
-
-// Gera os 4 períodos oficiais do porto (dia atual)
-$hoje = date('Y-m-d');
-$periodos_padrao = [
-    ['inicio' => "$hoje 07:00", 'fim' => "$hoje 12:59"],
-    ['inicio' => "$hoje 13:00", 'fim' => "$hoje 18:59"],
-    ['inicio' => "$hoje 19:00", 'fim' => "$hoje 23:59"],
-    ['inicio' => date('Y-m-d H:i', strtotime("$hoje 00:00")), 'fim' => "$hoje 06:59"],
-];
-
 require_once __DIR__ . '/app/views/header.php';
 ?>
 
-<div class="container" style="max-width:900px; margin-top:30px;">
+<div class="container mt-4">
 
     <h2>Operação Atual</h2>
-    <hr>
 
-    <?php if (!$operacao): ?>
+    <?php if (!isset($_SESSION['operacao'])): ?>
+        
         <p>Nenhuma operação criada ainda.</p>
-        <a class="btn btn-primary" href="/nova_operacao.php">Criar Operação</a>
+        <a href="/nova_operacao.php" class="btn btn-primary">+ Nova Operação</a>
 
     <?php else: ?>
 
-        <div class="card" style="padding:20px; margin-bottom:30px;">
+        <?php $op = $_SESSION['operacao']; ?>
 
-            <p><strong>Empresa:</strong> <?= htmlspecialchars($operacao['empresa']) ?></p>
-            <p><strong>Navio:</strong> <?= htmlspecialchars($operacao['navio']) ?></p>
-            <p><strong>Produto:</strong> <?= htmlspecialchars($operacao['produto']) ?></p>
-            <p><strong>Recinto:</strong> <?= htmlspecialchars($operacao['recinto']) ?></p>
-            <p><strong>Tipo de Operação:</strong> <?= htmlspecialchars($operacao['tipo']) ?></p>
-            <p><strong>Criado em:</strong> <?= htmlspecialchars($operacao['criado_em']) ?></p>
+        <ul class="list-group mb-4">
+            <li class="list-group-item"><strong>Empresa:</strong> <?= $op['empresa'] ?></li>
+            <li class="list-group-item"><strong>Tipo:</strong> <?= $op['tipo'] ?></li>
+            <li class="list-group-item"><strong>Navio:</strong> <?= $op['navio'] ?></li>
+            <li class="list-group-item"><strong>Produto:</strong> <?= $op['produto'] ?></li>
+            <li class="list-group-item"><strong>Recinto:</strong> <?= $op['recinto'] ?></li>
+        </ul>
 
-        </div>
+        <h3>Períodos Oficiais do Porto</h3>
+        <p class="text-muted">Escolha um período para criar.</p>
 
-        <h3>Períodos da Operação</h3>
-        <hr>
+        <?php
+        $periodos = [
+            ["08:00", "12:00"],
+            ["12:00", "18:00"],
+            ["18:00", "00:00"],
+            ["00:00", "08:00"],
+        ];
+        ?>
 
-        <p>Selecione um dos períodos oficiais do porto para cadastrar:</p>
+        <?php foreach ($periodos as $p): ?>
+            <form method="POST" action="/periodo_controller.php" class="mb-2">
+                <input type="hidden" name="inicio" value="<?= $p[0] ?>">
+                <input type="hidden" name="fim" value="<?= $p[1] ?>">
+                <button class="btn btn-outline-primary w-100">
+                    Criar Período: <?= $p[0] ?> → <?= $p[1] ?>
+                </button>
+            </form>
+        <?php endforeach; ?>
 
-        <div style="display:flex; flex-wrap:wrap; gap:15px; margin:20px 0;">
-            <?php foreach ($periodos_padrao as $p): ?>
+        <hr class="my-4">
 
-                <form method="POST" action="/criar_periodo.php" style="display:inline;">
-                    <input type="hidden" name="inicio" value="<?= $p['inicio'] ?>">
-                    <input type="hidden" name="fim" value="<?= $p['fim'] ?>">
+        <h3>Período Selecionado</h3>
 
-                    <button class="btn btn-secondary">
-                        <?= date('H:i', strtotime($p['inicio'])) ?> —
-                        <?= date('H:i', strtotime($p['fim'])) ?>
-                    </button>
-                </form>
-
-            <?php endforeach; ?>
-        </div>
-
-        <?php if (!empty($periodos)): ?>
-            <h4>Períodos já cadastrados</h4>
-            <ul>
-                <?php foreach ($periodos as $p): ?>
-                    <li>
-                        <strong>Início:</strong> <?= htmlspecialchars($p['inicio']) ?>
-                        —
-                        <strong>Fim:</strong> <?= htmlspecialchars($p['fim']) ?>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
-        <?php else: ?>
+        <?php if (!isset($_SESSION['periodo'])): ?>
             <p>Nenhum período cadastrado ainda.</p>
+        <?php else: ?>
+            <?php $per = $_SESSION['periodo']; ?>
+            <ul class="list-group">
+                <li class="list-group-item"><strong>Início:</strong> <?= $per['inicio'] ?></li>
+                <li class="list-group-item"><strong>Fim:</strong> <?= $per['fim'] ?></li>
+            </ul>
+
+            <a href="/captura.php" class="btn btn-success w-100 mt-3">Ir para Captura</a>
         <?php endif; ?>
 
     <?php endif; ?>
