@@ -7,12 +7,12 @@ class Database {
     public static function connect() {
         if (!self::$db) {
 
-            // Caminho seguro para escrita no Render
-            $path = '/tmp/database.sqlite';
+            // SQLite deve ficar em /var/
+            $path = '/var/database.sqlite';
 
-            // Se o arquivo não existir, cria
+            // cria o arquivo se não existir
             if (!file_exists($path)) {
-                touch($path); // cria arquivo vazio
+                touch($path);
             }
 
             self::$db = new PDO("sqlite:" . $path);
