@@ -1,38 +1,36 @@
 <?php
-// criar_tabelas.php na RAIZ do projeto
-
 require_once __DIR__ . '/app/database.php';
 
 try {
     $db = Database::connect();
 
-    // Tabela de operações
+    // tabela operações
     $db->exec("
         CREATE TABLE IF NOT EXISTS operacoes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            empresa       TEXT NOT NULL,
-            navio         TEXT NOT NULL,
-            produto       TEXT NOT NULL,
-            recinto       TEXT NOT NULL,
-            tipo          TEXT NOT NULL,
-            criado_em     TEXT NOT NULL
-        );
+            empresa TEXT,
+            navio TEXT,
+            produto TEXT,
+            recinto TEXT,
+            tipo_operacao TEXT,
+            criado_em TEXT
+        )
     ");
 
-    // Tabela de períodos
+    // tabela períodos
     $db->exec("
         CREATE TABLE IF NOT EXISTS periodos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            operacao_id INTEGER NOT NULL,
-            inicio      TEXT NOT NULL,
-            fim         TEXT NOT NULL,
-            criado_em   TEXT NOT NULL,
+            operacao_id INTEGER,
+            inicio TEXT,
+            fim TEXT,
             FOREIGN KEY (operacao_id) REFERENCES operacoes(id)
-        );
+        )
     ");
 
-    echo "<h3>Tabelas criadas/atualizadas com sucesso.</h3>";
+    echo "Tabelas criadas/atualizadas com sucesso.";
+
 } catch (Exception $e) {
-    echo "<h3>Erro ao criar tabelas:</h3>";
-    echo "<pre>" . htmlspecialchars($e->getMessage()) . "</pre>";
+    echo "Erro ao criar tabelas:<br>";
+    echo $e->getMessage();
 }
