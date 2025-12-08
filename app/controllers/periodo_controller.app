@@ -1,23 +1,24 @@
 <?php
 session_start();
-
-// Se operação não existir, não pode haver período
-if (!isset($_SESSION['operacao'])) {
-    header("Location: /nova_operacao.php");
-    exit;
-}
+require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
+require_login();
 
 $inicio = $_POST['inicio'] ?? null;
-$fim    = $_POST['fim'] ?? null;
+$fim    = $_POST['fim']    ?? null;
 
 if (!$inicio || !$fim) {
-    die("Erro: datas inválidas.");
+    die("Período inválido.");
 }
 
-$_SESSION['periodo'] = [
-    "inicio" => $inicio,
-    "fim"    => $fim
+if (!isset($_SESSION['periodos'])) {
+    $_SESSION['periodos'] = [];
+}
+
+$_SESSION['periodos'][] = [
+    'inicio' => $inicio,
+    'fim' => $fim,
+    'created_at' => date("Y-m-d H:i:s")
 ];
 
-header("Location: /app/views/resumo_periodo.php");
+header("Location: /dashboard.php");
 exit;
