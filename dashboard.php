@@ -18,22 +18,23 @@ require_once __DIR__ . '/app/views/header.php';
         <?php $op = $_SESSION['operacao']; ?>
 
         <ul class="list-group mb-4">
-            <li class="list-group-item"><strong>Empresa:</strong> <?= $op['empresa'] ?></li>
-            <li class="list-group-item"><strong>Tipo:</strong> <?= $op['tipo'] ?></li>
-            <li class="list-group-item"><strong>Navio:</strong> <?= $op['navio'] ?></li>
-            <li class="list-group-item"><strong>Produto:</strong> <?= $op['produto'] ?></li>
-            <li class="list-group-item"><strong>Recinto:</strong> <?= $op['recinto'] ?></li>
+            <li class="list-group-item"><strong>Empresa:</strong> <?= htmlspecialchars($op['empresa']) ?></li>
+            <li class="list-group-item"><strong>Tipo:</strong> <?= htmlspecialchars($op['tipo']) ?></li>
+            <li class="list-group-item"><strong>Navio:</strong> <?= htmlspecialchars($op['navio']) ?></li>
+            <li class="list-group-item"><strong>Produto:</strong> <?= htmlspecialchars($op['produto']) ?></li>
+            <li class="list-group-item"><strong>Recinto:</strong> <?= htmlspecialchars($op['recinto']) ?></li>
         </ul>
 
         <h3>Períodos Oficiais do Porto</h3>
-        <p class="text-muted">Escolha um período para criar.</p>
+        <p class="text-muted">Escolha um período para criar (sempre do dia atual).</p>
 
         <?php
+        // Mesmos horários do conferentes.app
         $periodos = [
-            ["08:00", "12:00"],
-            ["12:00", "18:00"],
-            ["18:00", "00:00"],
-            ["00:00", "08:00"],
+            ['07:00', '12:59'],
+            ['13:00', '18:59'],
+            ['19:00', '23:59'],
+            ['00:00', '06:59'],
         ];
         ?>
 
@@ -42,7 +43,7 @@ require_once __DIR__ . '/app/views/header.php';
                 <input type="hidden" name="inicio" value="<?= $p[0] ?>">
                 <input type="hidden" name="fim" value="<?= $p[1] ?>">
                 <button class="btn btn-outline-primary w-100">
-                    Criar Período: <?= $p[0] ?> → <?= $p[1] ?>
+                    Criar Período: <?= $p[0] ?> — <?= $p[1] ?>
                 </button>
             </form>
         <?php endforeach; ?>
@@ -56,8 +57,8 @@ require_once __DIR__ . '/app/views/header.php';
         <?php else: ?>
             <?php $per = $_SESSION['periodo']; ?>
             <ul class="list-group">
-                <li class="list-group-item"><strong>Início:</strong> <?= $per['inicio'] ?></li>
-                <li class="list-group-item"><strong>Fim:</strong> <?= $per['fim'] ?></li>
+                <li class="list-group-item"><strong>Início:</strong> <?= htmlspecialchars($per['inicio']) ?></li>
+                <li class="list-group-item"><strong>Fim:</strong> <?= htmlspecialchars($per['fim']) ?></li>
             </ul>
 
             <a href="/captura.php" class="btn btn-success w-100 mt-3">Ir para Captura</a>
