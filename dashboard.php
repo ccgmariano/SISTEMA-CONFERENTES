@@ -2,141 +2,88 @@
 require_once __DIR__ . '/config.php';
 require_login();
 require_once __DIR__ . '/app/views/header.php';
+require_once __DIR__ . '/app/database.php';
 
-// Operação atual (se houver)
-$operacao = $_SESSION['operacao'] ?? null;
+// -------------------------------------------
+// 1) Carregar operações do banco
+// -------------------------------------------
+$stmt = $db->query("SELECT * FROM operacoes ORDER BY criado_em DESC");
+$operacoes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Períodos já cadastrados na sessão
-$periodos = $_SESSION['periodos'] ?? [];
-
-// Mapa rápido para saber quais períodos já existem
-$periodosCriados = [];
-foreach ($periodos as $p) {
-    $chave = $p['inicio'] . '|' . $p['fim'];
-    $periodosCriados[$chave] = true;
+// -------------------------------------------
+// 2) Se existe operação selecionada, carrega períodos dela
+// -------------------------------------------
+$periodos = [];
+if (isset($_GET['op'])) {
+    $opId = intval($_GET['op']);
+    $stmt = $db->prepare("SELECT * FROM periodos WHERE operacao_id = ? ORDER BY inicio ASC");
+    $stmt->execute([$opId]);
+    $periodos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-
-// Períodos oficiais do porto (horários do conferentes.app)
-// Ajuste aqui se quiser mudar no futuro
-$periodos_porto = [
-    ['inicio' => '07:00', 'fim' => '12:59'],
-    ['inicio' => '13:00', 'fim' => '18:59'],
-    ['inicio' => '19:00', 'fim' => '23:59'],
-    ['inicio' => '00:00', 'fim' => '06:59'],
-];
 ?>
 
-<div class="container mt-4" style="max-width: 900px;">
+<div class="container mt-4">
 
-    <h2>Operação Atual</h2>
+    <h2>Operações</h2>
 
-    <?php if (!$operacao): ?>
+    <a href="/nova_operacao.php" class="btn btn-primary mb-3">+ Nova Operação</a>
 
-        <p>Nenhuma operação criada ainda.</p>
-        <a href="/nova_operacao.php" class="btn btn-primary">+ Nova Operação</a>
-
+    <?php if (count($operacoes) === 0): ?>
+        <p>Nenhuma operação cadastrada ainda.</p>
     <?php else: ?>
 
         <ul class="list-group mb-4">
-            <li class="list-group-item"><strong>Empresa:</strong>
-                <?= htmlspecialchars($operacao['empresa'] ?? '') ?></li>
-            <li class="list-group-item"><strong>Tipo de Operação:</strong>
-                <?= htmlspecialchars($operacao['tipo_operacao'] ?? ($operacao['tipo'] ?? '')) ?></li>
-            <li class="list-group-item"><strong>Navio:</strong>
-                <?= htmlspecialchars($operacao['navio'] ?? '') ?></li>
-            <li class="list-group-item"><strong>Produto:</strong>
-                <?= htmlspecialchars($operacao['produto'] ?? '') ?></li>
-            <li class="list-group-item"><strong>Recinto:</strong>
-                <?= htmlspecialchars($operacao['recinto'] ?? '') ?></li>
+            <?php foreach ($operacoes as $op): ?>
+                <a class="list-group-item list-group-item-action <?= (isset($_GET['op']) && $_GET['op'] == $op['id']) ? 'active' : '' ?>"
+                   href="/dashboard.php?op=<?= $op['id'] ?>">
+                   
+                    <strong><?= htmlspecialchars($op['navio']) ?></strong>
+                    — <?= htmlspecialchars($op['produto']) ?>
+                    <br>
+                    <small><?= htmlspecialchars($op['empresa']) ?> • <?= htmlspecialchars($op['tipo_operacao']) ?></small>
+                </a>
+            <?php endforeach; ?>
         </ul>
 
-        <!-- PERÍODOS OFICIAIS DO PORTO -->
-        <h3>Períodos Oficiais do Porto</h3>
-        <p class="text-muted">Escolha um período para criar. Se já existir, o botão aparecerá desabilitado.</p>
+    <?php endif; ?>
 
-        <?php foreach ($periodos_porto as $p): ?>
-            <?php
-                $chave = $p['inicio'] . '|' . $p['fim'];
-                $jaCriado = isset($periodosCriados[$chave]);
-            ?>
 
-            <?php if ($jaCriado): ?>
-                <button class="btn btn-outline-secondary w-100 mb-2" disabled>
-                    Período já criado: <?= $p['inicio'] ?> — <?= $p['fim'] ?>
-                </button>
-            <?php else: ?>
-                <form method="POST" action="/periodo_controller.php" class="mb-2">
-                    <input type="hidden" name="acao" value="criar">
-                    <input type="hidden" name="inicio" value="<?= $p['inicio'] ?>">
-                    <input type="hidden" name="fim" value="<?= $p['fim'] ?>">
-                    <button class="btn btn-outline-primary w-100">
-                        Criar Período: <?= $p['inicio'] ?> — <?= $p['fim'] ?>
-                    </button>
-                </form>
-            <?php endif; ?>
-
-        <?php endforeach; ?>
-
-        <hr class="my-4">
-
-        <!-- PERÍODOS JÁ CADASTRADOS -->
+    <?php if (isset($opId)): ?>
+        <hr>
         <h3>Períodos da Operação</h3>
 
-        <?php if (empty($periodos)): ?>
+        <!-- Botão para criar período -->
+        <a href="/criar_periodo.php?op=<?= $opId ?>" class="btn btn-success mb-3">
+            + Criar Período
+        </a>
 
-            <p class="text-muted">Nenhum período cadastrado ainda.</p>
-
+        <?php if (count($periodos) === 0): ?>
+            <p>Nenhum período cadastrado ainda.</p>
         <?php else: ?>
 
-            <ul class="list-group mb-3">
-                <?php foreach ($periodos as $index => $per): ?>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span>
-                            <strong>Início:</strong> <?= htmlspecialchars($per['inicio']) ?>
-                            —
-                            <strong>Fim:</strong> <?= htmlspecialchars($per['fim']) ?>
-                        </span>
+            <ul class="list-group">
+                <?php foreach ($periodos as $p): ?>
+                    <li class="list-group-item">
+                        <strong><?= $p['inicio'] ?> → <?= $p['fim'] ?></strong>
+                        <br>
+                        Criado em: <?= $p['criado_em'] ?>
 
-                        <span>
-                            <!-- Entrar / Capturar -->
-                            <form method="POST" action="/periodo_controller.php" class="d-inline">
-                                <input type="hidden" name="acao" value="selecionar">
-                                <input type="hidden" name="index" value="<?= $index ?>">
-                                <button class="btn btn-sm btn-success">
-                                    Capturar
-                                </button>
-                            </form>
+                        <div class="mt-2">
+                            <a class="btn btn-primary btn-sm"
+                               href="/captura.php?periodo=<?= $p['id'] ?>&op=<?= $opId ?>">
+                                Abrir Período
+                            </a>
 
-                            <!-- Excluir -->
-                            <form method="POST" action="/periodo_controller.php" class="d-inline ms-2"
-                                  onsubmit="return confirm('Excluir este período?');">
-                                <input type="hidden" name="acao" value="excluir">
-                                <input type="hidden" name="index" value="<?= $index ?>">
-                                <button class="btn btn-sm btn-danger">
-                                    Excluir
-                                </button>
-                            </form>
-                        </span>
+                            <a class="btn btn-danger btn-sm"
+                               href="/excluir_periodo.php?id=<?= $p['id'] ?>&op=<?= $opId ?>"
+                               onclick="return confirm('Excluir este período?')">
+                                Excluir
+                            </a>
+                        </div>
                     </li>
                 <?php endforeach; ?>
             </ul>
 
-        <?php endif; ?>
-
-        <!-- BLOCO DE PERÍODO SELECIONADO (mantém comportamento antigo) -->
-        <h3>Período Selecionado</h3>
-
-        <?php if (!isset($_SESSION['periodo'])): ?>
-
-            <p class="text-muted">Nenhum período selecionado ainda.</p>
-
-        <?php else: ?>
-            <?php $pSel = $_SESSION['periodo']; ?>
-            <ul class="list-group">
-                <li class="list-group-item"><strong>Início:</strong> <?= htmlspecialchars($pSel['inicio']) ?></li>
-                <li class="list-group-item"><strong>Fim:</strong> <?= htmlspecialchars($pSel['fim']) ?></li>
-            </ul>
-            <a href="/captura.php" class="btn btn-primary w-100 mt-3">Ir para Captura</a>
         <?php endif; ?>
 
     <?php endif; ?>
