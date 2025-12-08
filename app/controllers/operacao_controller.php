@@ -1,5 +1,6 @@
 <?php
-require_once __DIR__ . '/../database.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/app/database.php';
+
 $db = Database::connect();
 
 $empresa      = $_POST['empresa'] ?? null;
