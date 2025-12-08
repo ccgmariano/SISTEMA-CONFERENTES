@@ -12,9 +12,8 @@ if (!$empresa || !$navio || !$produto || !$recinto || !$tipoOperacao) {
     die("Erro: todos os campos são obrigatórios.");
 }
 
-// Aqui estamos só guardando em sessão.
-// Mais tarde isso vira tabela de banco “operacoes”.
-$_SESSION['operacao_atual'] = [
+// SALVAR PADRÃO CORRETO — usado pelo dashboard
+$_SESSION['operacao'] = [
     'empresa'       => $empresa,
     'navio'         => $navio,
     'produto'       => $produto,
@@ -22,6 +21,9 @@ $_SESSION['operacao_atual'] = [
     'tipo_operacao' => $tipoOperacao,
     'criado_em'     => date('Y-m-d H:i:s'),
 ];
+
+// Resetar período ao criar operação nova
+unset($_SESSION['periodo']);
 
 // Volta para o dashboard
 header("Location: /dashboard.php");
