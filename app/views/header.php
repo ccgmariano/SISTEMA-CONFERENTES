@@ -1,8 +1,23 @@
 <?php 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 ?>
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="utf-8">
+    <title><?php echo APP_NAME; ?></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- CSS principal -->
+    <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+
+<body>
+
 <header class="topbar">
     <div class="topbar-inner">
+
         <div class="brand"><?php echo APP_NAME; ?></div>
 
         <?php if (is_logged_in()): ?>
@@ -12,5 +27,8 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
                 <a href="/logout.php">Sair</a>
             </nav>
         <?php endif; ?>
+
     </div>
 </header>
+
+<main class="page-content">
