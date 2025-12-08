@@ -1,34 +1,29 @@
 <?php
-require_once 'config.php';
-require_login();
+require_once __DIR__ . '/app/views/header.php';
 
-// Lista de períodos fixos do porto
 $periodos = [
-    ["07:00", "12:59"],
-    ["13:00", "18:59"],
-    ["19:00", "23:59"],
-    ["00:00", "06:59"],
+    ['07:00', '12:59'],
+    ['13:00', '18:59'],
+    ['19:00', '23:59'],
+    ['00:00', '06:59'],
 ];
 
-$dataHoje = date("Y-m-d");
-
-require_once $_SERVER['DOCUMENT_ROOT'] . '/app/views/header.php';
+$hoje = date('Y-m-d');
 ?>
 
-<div class="container mt-5" style="max-width:600px;">
-    <h3 class="mb-4">Selecione o Período</h3>
+<div class="container" style="max-width:700px; margin-top:30px;">
+    <h2>Selecione o Período</h2>
 
     <?php foreach ($periodos as $p): ?>
-        <form method="post" action="/periodo_controller.php">
+        <form method="POST" action="/periodo_controller.php">
+            <input type="hidden" name="inicio" value="<?= $hoje . 'T' . $p[0] ?>">
+            <input type="hidden" name="fim"    value="<?= $hoje . 'T' . $p[1] ?>">
 
-            <input type="hidden" name="inicio" value="<?= $dataHoje . 'T' . $p[0] ?>">
-            <input type="hidden" name="fim" value="<?= $dataHoje . 'T' . $p[1] ?>">
-
-            <button class="btn btn-primary w-100">
+            <button class="btn btn-primary w-100 mt-3">
                 <?= $p[0] ?> — <?= $p[1] ?>
             </button>
         </form>
     <?php endforeach; ?>
 </div>
 
-<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/app/views/footer.php'; ?>
+<?php require_once __DIR__ . '/app/views/footer.php'; ?>
