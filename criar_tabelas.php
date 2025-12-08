@@ -4,6 +4,7 @@ require_once __DIR__ . '/app/database.php';
 try {
     $db = Database::connect();
 
+    // Criar tabela de operações
     $db->exec("
         CREATE TABLE IF NOT EXISTS operacoes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -16,12 +17,15 @@ try {
         );
     ");
 
+    // Criar tabela de períodos
     $db->exec("
         CREATE TABLE IF NOT EXISTS periodos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             operacao_id INTEGER NOT NULL,
             inicio TEXT NOT NULL,
-            fim TEXT NOT NULL
+            fim TEXT NOT NULL,
+            criado_em TEXT NOT NULL,
+            FOREIGN KEY (operacao_id) REFERENCES operacoes(id)
         );
     ");
 
@@ -30,4 +34,3 @@ try {
 } catch (Exception $e) {
     echo "Erro ao criar tabelas:<br>" . $e->getMessage();
 }
-?>
