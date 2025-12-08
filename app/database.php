@@ -8,18 +8,19 @@ class Database {
 
         if (!self::$db) {
 
-            // O Render só permite escrita em /tmp
-            $path = '/tmp/database.sqlite';
+            // Local correto no Render (permite escrita)
+            $path = '/tmp/sistema_conferentes.sqlite';
 
-            // Se o arquivo não existir, cria vazio
+            // Se não existir, cria o arquivo
             if (!file_exists($path)) {
                 file_put_contents($path, '');
             }
 
-            self::$db = new PDO('sqlite:' . $path);
+            self::$db = new PDO("sqlite:" . $path);
             self::$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         }
 
         return self::$db;
     }
 }
+?>
