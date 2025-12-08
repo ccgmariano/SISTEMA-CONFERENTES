@@ -1,34 +1,27 @@
 <?php
-session_start();
+require_once __DIR__ . '/../../config.php';
+require_login();
 
-// Garantir que operação e período existem
-if (!isset($_SESSION['operacao']) || !isset($_SESSION['periodo'])) {
-    echo "<p>Erro: sessão expirada.</p>";
-    exit;
+// Recupera operação e período
+$operacao = $_SESSION['operacao_atual'] ?? null;
+$periodo  = $_SESSION['periodo_atual'] ?? null;
+
+if (!$operacao || !$periodo) {
+    die("<div class='alert alert-danger'>Erro: operação ou período inválidos.</div>");
 }
 
-$op  = $_SESSION['operacao'];
-$per = $_SESSION['periodo'];
+// --------------------------
+// SIMULAÇÃO DE PESAGENS
+// Aqui, no futuro, faremos a consulta automática ao Poseidon
+// --------------------------
 
-// Aqui montamos a URL (igual conferentes faz com teste.php)
-$url = "https://conferentes.app.br/teste.php?"
-     . "navio="   . urlencode($op['navio'])
-     . "&inicio=" . urlencode($per['inicio'])
-     . "&termino=". urlencode($per['fim'])
-     . "&produto=". urlencode($op['produto'])
-     . "&recinto=". urlencode($op['recinto']);
-
-// --- FASE 1: SIMULAÇÃO ---
-// Enquanto não conectamos ao Poseidon:
-$dadosSimulados = [
-    ["PLACA001", "07:10", "36.120", "Vazio"],
-    ["PLACA002", "07:12", "48.310", "Carregado"],
-    ["PLACA003", "07:15", "52.900", "Carregado"],
+$simulado = [
+    ["hora" => "08:12:44", "peso" => 22340],
+    ["hora" => "08:19:02", "peso" => 22110],
+    ["hora" => "08:26:33", "peso" => 22490],
+    ["hora" => "08:34:10", "peso" => 22540],
 ];
 
-// Renderiza a tabela
-ob_start();
-include __DIR__ . "/../views/partials/tabela_pesagens.php";
-$html = ob_get_clean();
+$_SESSION['pesagens'] = $simulado;
 
-echo $html;
+require_once __DIR__ . '/../views/lista_pesagens.php';
