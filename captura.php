@@ -1,33 +1,47 @@
 <?php
+// captura.php (RAIZ)
+
 require_once __DIR__ . '/config.php';
 require_login();
 
-// Verificar operação e período ativos
-$operacao = $_SESSION['operacao_atual'] ?? null;
-$periodo  = $_SESSION['periodo_atual'] ?? null;
+// Header (já puxa APP_NAME, CSS etc.)
+require_once __DIR__ . '/app/views/header.php';
 
-if (!$operacao || !$periodo) {
-    die("Operação ou período não encontrado.");
+// Conferência: precisamos ter operação e período na sessão
+if (!isset($_SESSION['operacao']) || !isset($_SESSION['periodo'])) {
+    ?>
+    <div class="container" style="margin-top:30px; max-width:900px;">
+        <div class="alert alert-warning">
+            Operação ou período não encontrado na sessão.<br>
+            Volte ao <a href="/dashboard.php">dashboard</a>, selecione uma operação e crie/abra um período.
+        </div>
+    </div>
+    <?php
+    require_once __DIR__ . '/app/views/footer.php';
+    exit;
 }
 
-require_once __DIR__ . '/app/views/header.php';
+$op  = $_SESSION['operacao'];
+$per = $_SESSION['periodo'];
 ?>
 
-<div class="container" style="max-width:900px; margin-top:30px;">
+<div class="container" style="margin-top: 30px; max-width: 900px;">
 
     <h2>Capturar Pesagens</h2>
-    <p class="text-muted">Use os dados abaixo para buscar as pesagens no Poseidon.</p>
+    <p class="text-muted">
+        Esses são os dados que serão enviados para o Poseidon (via teste.php do conferentes.app.br):
+    </p>
 
-    <ul class="list-group mb-4">
-        <li class="list-group-item"><strong>Navio:</strong> <?= htmlspecialchars($operacao['navio']) ?></li>
-        <li class="list-group-item"><strong>Produto:</strong> <?= htmlspecialchars($operacao['produto']) ?></li>
-        <li class="list-group-item"><strong>Recinto:</strong> <?= htmlspecialchars($operacao['recinto']) ?></li>
-        <li class="list-group-item"><strong>Início:</strong> <?= $periodo['inicio'] ?></li>
-        <li class="list-group-item"><strong>Fim:</strong> <?= $periodo['fim'] ?></li>
+    <ul class="list-group mt-3">
+        <li class="list-group-item"><strong>Navio:</strong> <?= htmlspecialchars($op['navio']) ?></li>
+        <li class="list-group-item"><strong>Produto:</strong> <?= htmlspecialchars($op['produto']) ?></li>
+        <li class="list-group-item"><strong>Recinto:</strong> <?= htmlspecialchars($op['recinto']) ?></li>
+        <li class="list-group-item"><strong>Início:</strong> <?= htmlspecialchars($per['inicio']) ?></li>
+        <li class="list-group-item"><strong>Fim:</strong> <?= htmlspecialchars($per['fim']) ?></li>
     </ul>
 
-    <button id="btnCapturar" class="btn btn-primary w-100">
-        🔄 Capturar Pesagens
+    <button class="btn btn-primary w-100 mt-4" id="btnCapturar">
+        Capturar Pesagens (Poseidon)
     </button>
 
     <div id="resultado" class="mt-4"></div>
@@ -35,27 +49,31 @@ require_once __DIR__ . '/app/views/header.php';
 </div>
 
 <script>
-document.getElementById("btnCapturar").addEventListener("click", function () {
-
+document.getElementById("btnCapturar").addEventListener("click", function() {
     const btn = this;
+    const divResultado = document.getElementById("resultado");
+
     btn.disabled = true;
     btn.innerText = "Consultando…";
+    divResultado.innerHTML = "<div class='alert alert-info'>Consultando Poseidon via conferentes.app.br...</div>";
 
     fetch("/app/controllers/captura_controller.php")
         .then(r => r.text())
-        .then(resp => {
-            document.getElementById("resultado").innerHTML = resp;
+        .then(html => {
+            divResultado.innerHTML = html;
             btn.disabled = false;
             btn.innerText = "Capturar Novamente";
         })
-        .catch(() => {
-            document.getElementById("resultado").innerHTML =
-                "<div class='alert alert-danger'>Erro ao consultar.</div>";
+        .catch(err => {
+            console.error(err);
+            divResultado.innerHTML =
+                "<div class='alert alert-danger'>Erro na captura. Tente novamente.</div>";
             btn.disabled = false;
-            btn.innerText = "Capturar Pesagens";
+            btn.innerText = "Capturar Pesagens (Poseidon)";
         });
-
 });
 </script>
 
-<?php require_once __DIR__ . '/app/views/footer.php'; ?>
+<?php
+require_once __DIR__ . '/app/views/footer.php';
+?>
