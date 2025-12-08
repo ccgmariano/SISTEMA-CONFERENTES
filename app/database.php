@@ -7,18 +7,20 @@ class Database {
     public static function connect() {
         if (!self::$db) {
 
-            // SQLite deve ficar em /var/
-            $path = '/var/database.sqlite';
+            // CAMINHO CORRETO PARA O SQLITE (na pasta app/)
+            $folder = __DIR__;
+            $path = $folder . '/database.sqlite';
 
-            // cria o arquivo se não existir
+            // criar arquivo se não existir
             if (!file_exists($path)) {
-                touch($path);
+                // cria arquivo vazio
+                file_put_contents($path, '');
             }
 
+            // abrir banco
             self::$db = new PDO("sqlite:" . $path);
             self::$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         }
-
         return self::$db;
     }
 }
