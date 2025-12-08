@@ -1,27 +1,71 @@
 <?php
-require_once __DIR__ . '/../../config.php';
+// app/controllers/captura_controller.php
+
+require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_login();
 
-// Recupera operação e período
-$operacao = $_SESSION['operacao_atual'] ?? null;
-$periodo  = $_SESSION['periodo_atual'] ?? null;
-
-if (!$operacao || !$periodo) {
-    die("<div class='alert alert-danger'>Erro: operação ou período inválidos.</div>");
+// Conferência: precisamos ter operação e período na sessão
+if (!isset($_SESSION['operacao']) || !isset($_SESSION['periodo'])) {
+    echo "<div class='alert alert-warning'>Operação ou período não encontrado na sessão.</div>";
+    exit;
 }
 
-// --------------------------
-// SIMULAÇÃO DE PESAGENS
-// Aqui, no futuro, faremos a consulta automática ao Poseidon
-// --------------------------
+$op  = $_SESSION['operacao'];
+$per = $_SESSION['periodo'];
 
-$simulado = [
-    ["hora" => "08:12:44", "peso" => 22340],
-    ["hora" => "08:19:02", "peso" => 22110],
-    ["hora" => "08:26:33", "peso" => 22490],
-    ["hora" => "08:34:10", "peso" => 22540],
-];
+// Pegamos os dados conforme definimos ao criar operação/período
+$navio   = $op['navio']   ?? '';
+$produto = $op['produto'] ?? '';
+$recinto = $op['recinto'] ?? '';
 
-$_SESSION['pesagens'] = $simulado;
+$inicio  = $per['inicio'] ?? '';
+$fim     = $per['fim']    ?? '';
 
-require_once __DIR__ . '/../views/lista_pesagens.php';
+// Segurança básica: se faltar algo, não chama nada
+if (!$navio || !$produto || !$recinto || !$inicio || !$fim) {
+    echo "<div class='alert alert-danger'>Dados incompletos para consulta.</div>";
+    exit;
+}
+
+// O datetime-local vem como 2025-12-07T07:00 — o teste.php espera um espaço
+$inicioFormatado = str_replace('T', ' ', $inicio);
+$fimFormatado    = str_replace('T', ' ', $fim);
+
+// Monta a URL exata que já testamos no navegador, só que agora no servidor
+$baseUrl = "https://conferentes.app.br/teste.php";
+$query = http_build_query([
+    'navio'   => $navio,
+    'inicio'  => $inicioFormatado,
+    'termino' => $fimFormatado,
+    'produto' => $produto,
+    'recinto' => $recinto,
+]);
+
+$url = $baseUrl . '?' . $query;
+
+// Faz a requisição servidor → conferentes.app.br (igual ao navegador, mas do Render)
+$ch = curl_init($url);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+
+$response = curl_exec($ch);
+$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$curlErr  = curl_error($ch);
+curl_close($ch);
+
+// Tratamento básico de erro
+if ($response === false || $httpCode !== 200) {
+    echo "<div class='alert alert-danger'>
+            Falha ao consultar teste.php<br>
+            HTTP: {$httpCode}<br>
+            Erro cURL: " . htmlspecialchars($curlErr) . "
+          </div>";
+    exit;
+}
+
+// Neste primeiro momento vamos simplesmente devolver o HTML bruto
+// recebido do teste.php, como fizemos no navegador.
+// Mais tarde podemos "limpar", padronizar tabela, guardar no banco etc.
+
+echo $response;
