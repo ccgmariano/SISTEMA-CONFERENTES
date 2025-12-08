@@ -5,22 +5,22 @@ class Database {
     private static $db;
 
     public static function connect() {
+
         if (!self::$db) {
 
-            // CAMINHO CORRETO PARA O SQLITE (na pasta app/)
-            $folder = __DIR__;
-            $path = $folder . '/database.sqlite';
+            // Local seguro para escrita no Render
+            $path = '/tmp/database.sqlite';
 
-            // criar arquivo se não existir
+            // Se o arquivo não existe, criar
             if (!file_exists($path)) {
-                // cria arquivo vazio
-                file_put_contents($path, '');
+                touch($path);
+                chmod($path, 0666);
             }
 
-            // abrir banco
             self::$db = new PDO("sqlite:" . $path);
             self::$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         }
+
         return self::$db;
     }
 }
