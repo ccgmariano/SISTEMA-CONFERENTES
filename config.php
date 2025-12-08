@@ -1,5 +1,12 @@
 <?php
 // Configuração geral do sistema
+// Caminho absoluto do banco SQLite
+define('DB_FILE', __DIR__ . '/database.sqlite');
+
+// Conexão PDO para todo o sistema
+$pdo = new PDO('sqlite:' . DB_FILE);
+$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
 
 // Sempre iniciar a sessão
 if (session_status() === PHP_SESSION_NONE) {
