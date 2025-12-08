@@ -1,24 +1,21 @@
 <?php
-session_start();
-require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
-require_login();
+require_once __DIR__ . '/../database.php';
+$db = Database::connect();
 
+$op_id = $_POST['operacao_id'] ?? null;
 $inicio = $_POST['inicio'] ?? null;
-$fim    = $_POST['fim']    ?? null;
+$fim = $_POST['fim'] ?? null;
 
-if (!$inicio || !$fim) {
-    die("Período inválido.");
+if (!$op_id || !$inicio || !$fim) {
+    die("Erro: dados inválidos.");
 }
 
-if (!isset($_SESSION['periodos'])) {
-    $_SESSION['periodos'] = [];
-}
+$stmt = $db->prepare("
+    INSERT INTO periodos (operacao_id, inicio, fim)
+    VALUES (?, ?, ?)
+");
 
-$_SESSION['periodos'][] = [
-    'inicio' => $inicio,
-    'fim' => $fim,
-    'created_at' => date("Y-m-d H:i:s")
-];
+$stmt->execute([$op_id, $inicio, $fim]);
 
-header("Location: /dashboard.php");
+header("Location: /operacao_view.php?id=" . $op_id);
 exit;
