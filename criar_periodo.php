@@ -1,29 +1,55 @@
 <?php
-require_once __DIR__ . '/app/views/header.php';
+require_once __DIR__ . '/config.php';
+require_login();
 
-$periodos = [
-    ['07:00', '12:59'],
-    ['13:00', '18:59'],
-    ['19:00', '23:59'],
-    ['00:00', '06:59'],
-];
+// Certifique-se de que exista o array de períodos
+if (!isset($_SESSION['periodos'])) {
+    $_SESSION['periodos'] = [];
+}
 
-$hoje = date('Y-m-d');
-?>
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-<div class="container" style="max-width:700px; margin-top:30px;">
-    <h2>Selecione o Período</h2>
+    $periodo = $_POST['periodo'] ?? null;
 
-    <?php foreach ($periodos as $p): ?>
-        <form method="POST" action="/periodo_controller.php">
-            <input type="hidden" name="inicio" value="<?= $hoje . 'T' . $p[0] ?>">
-            <input type="hidden" name="fim"    value="<?= $hoje . 'T' . $p[1] ?>">
+    if (!$periodo) {
+        die("Erro: período inválido.");
+    }
 
-            <button class="btn btn-primary w-100 mt-3">
-                <?= $p[0] ?> — <?= $p[1] ?>
-            </button>
-        </form>
-    <?php endforeach; ?>
-</div>
+    // Converter o período para horários reais
+    switch ($periodo) {
+        case "1":
+            $inicio = "07:00";
+            $fim = "13:00";
+            break;
 
-<?php require_once __DIR__ . '/app/views/footer.php'; ?>
+        case "2":
+            $inicio = "13:00";
+            $fim = "19:00";
+            break;
+
+        case "3":
+            $inicio = "19:00";
+            $fim = "01:00";
+            break;
+
+        case "4":
+            $inicio = "01:00";
+            $fim = "07:00";
+            break;
+
+        default:
+            die("Erro: período inválido.");
+    }
+
+    // Salvar período na sessão
+    $_SESSION['periodos'][] = [
+        'id'     => time(),
+        'inicio' => $inicio,
+        'fim'    => $fim
+    ];
+
+    header("Location: /dashboard.php");
+    exit;
+}
+
+die("Requisição inválida");
