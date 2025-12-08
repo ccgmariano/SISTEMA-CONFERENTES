@@ -1,49 +1,59 @@
 <?php
-session_start();
-require_once __DIR__ . '/app/views/header.php';
+require_once __DIR__ . '/config.php';
+require_login();
+
+// Se existir operação atual
+$operacao = $_SESSION['operacao_atual'] ?? null;
+
+// Lista de períodos (por enquanto apenas array em sessão)
+$periodos = $_SESSION['periodos'] ?? [];
 ?>
 
-<div class="container mt-4" style="max-width: 700px;">
+<?php include __DIR__ . '/app/views/header.php'; ?>
 
-    <?php if (isset($_SESSION['operacao_atual'])): ?>
-        <?php $op = $_SESSION['operacao_atual']; ?>
+<div class="container">
 
-        <div class="card mb-4" style="padding: 16px; border: 1px solid #ddd; border-radius: 8px;">
-            <h3 class="mb-3">Operação Atual</h3>
+    <?php if ($operacao): ?>
+        <div class="card">
+            <h3>Operação Atual</h3>
 
-            <p><strong>Empresa:</strong> <?= htmlspecialchars($op['empresa']) ?></p>
-            <p><strong>Navio:</strong> <?= htmlspecialchars($op['navio']) ?></p>
-            <p><strong>Produto:</strong> <?= htmlspecialchars($op['produto']) ?></p>
-            <p><strong>Recinto:</strong> <?= htmlspecialchars($op['recinto']) ?></p>
-            <p><strong>Tipo de Operação:</strong> <?= htmlspecialchars($op['tipo_operacao']) ?></p>
-            <p><small>Criado em: <?= htmlspecialchars($op['criado_em']) ?></small></p>
+            <p><strong>Empresa:</strong> <?= htmlspecialchars($operacao['empresa']) ?></p>
+            <p><strong>Navio:</strong> <?= htmlspecialchars($operacao['navio']) ?></p>
+            <p><strong>Produto:</strong> <?= htmlspecialchars($operacao['produto']) ?></p>
+            <p><strong>Recinto:</strong> <?= htmlspecialchars($operacao['recinto']) ?></p>
+            <p><strong>Tipo de Operação:</strong> <?= htmlspecialchars($operacao['tipo']) ?></p>
+            <p><strong>Criado em:</strong> <?= htmlspecialchars($operacao['criado_em']) ?></p>
         </div>
+
+        <hr>
+
+        <h3>Períodos da Operação</h3>
+
+        <!-- BOTÃO CRIAR PERÍODO -->
+        <p>
+            <a href="/novo_periodo.php" class="btn btn-primary">Criar Período</a>
+        </p>
+
+        <!-- LISTA DE PERÍODOS -->
+        <?php if (empty($periodos)): ?>
+            <p><em>Nenhum período cadastrado até o momento.</em></p>
+        <?php else: ?>
+            <ul class="list-group">
+                <?php foreach ($periodos as $p): ?>
+                    <li class="list-group-item">
+                        <strong>Início:</strong> <?= htmlspecialchars($p['inicio']) ?>
+                        —
+                        <strong>Fim:</strong> <?= htmlspecialchars($p['fim']) ?>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
 
     <?php else: ?>
-
-        <div class="alert alert-info mb-4">
-            Nenhuma operação ativa. Clique em <strong>Nova Operação</strong> para iniciar.
-        </div>
-
+        <p><strong>Nenhuma operação ativa.</strong></p>
+        <a href="/nova_operacao.php" class="btn btn-primary">Criar nova operação</a>
     <?php endif; ?>
-
-    <h2 class="mt-4">Dashboard inicial</h2>
-
-    <p>Olá, <strong>conferente</strong>!</p>
-
-    <p>Esta é a versão 0.1 do <strong>Sistema Conferentes PLUS</strong>.</p>
-
-    <p>Próximos passos previstos:</p>
-    <ul>
-        <li>Adicionar tela para informar navio / início / fim / produto / recinto.</li>
-        <li>Implementar captura automática no Poseidon (consulta de relatórios).</li>
-        <li>Salvar os registros em banco ou gerar arquivos para importação.</li>
-    </ul>
-
-    <p>Por enquanto é só uma base segura com login simples, rodando no Render, pronta para evoluir.</p>
-
-    <p class="mt-4"><small>Sistema Conferentes PLUS • Versão 0.1</small></p>
 
 </div>
 
-<?php require_once __DIR__ . '/app/views/footer.php'; ?>
+<?php include __DIR__ . '/app/views/footer.php'; ?>
