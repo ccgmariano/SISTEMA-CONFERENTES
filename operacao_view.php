@@ -5,31 +5,30 @@ require_login();
 require_once __DIR__ . '/app/database.php';
 $db = Database::connect();
 
-// Validar ID
-if (!isset($_GET['id'])) {
-    die("ID inválido.");
+// ID da operação que veio pela URL
+$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+if ($id <= 0) {
+    die('Operação inválida.');
 }
 
-$id = (int) $_GET['id'];
-
-// Buscar operação
-$stmt = $db->prepare("SELECT * FROM operacoes WHERE id = ?");
+// Busca a operação
+$stmt = $db->prepare('SELECT * FROM operacoes WHERE id = ?');
 $stmt->execute([$id]);
 $op = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$op) {
-    die("Operação não encontrada.");
+    die('Operação não encontrada.');
 }
 
-// Buscar períodos dessa operação
-$stmt = $db->prepare("SELECT * FROM periodos WHERE operacao_id = ? ORDER BY id ASC");
+// Busca períodos já cadastrados para essa operação
+$stmt = $db->prepare('SELECT * FROM periodos WHERE operacao_id = ? ORDER BY inicio');
 $stmt->execute([$id]);
-$periodos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$periodosExistentes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 require_once __DIR__ . '/app/views/header.php';
 ?>
 
-<div class="container mt-4" style="max-width:900px;">
+<div class="container mt-4">
 
     <h2>Operação Criada</h2>
 
@@ -41,60 +40,48 @@ require_once __DIR__ . '/app/views/header.php';
         <li class="list-group-item"><strong>Recinto:</strong> <?= htmlspecialchars($op['recinto']) ?></li>
     </ul>
 
-    <hr>
-
     <h3>Períodos da Operação</h3>
 
-    <!-- períodos oficiais -->
     <p>Selecione um período para criar:</p>
 
     <?php
-    $periodos_porto = [
-        ["08:00", "12:00"],
-        ["12:00", "18:00"],
-        ["18:00", "00:00"],
-        ["00:00", "08:00"],
+    // HORÁRIOS OFICIAIS (como tínhamos deixado certo antes)
+    $periodosPadrao = [
+        ['07:00', '12:59'],
+        ['13:00', '18:59'],
+        ['19:00', '23:59'],
+        ['00:00', '06:59'],
     ];
     ?>
 
-    <?php foreach ($periodos_porto as $p): ?>
+    <?php foreach ($periodosPadrao as $p): ?>
         <form method="POST" action="/app/controllers/periodo_controller.php" class="mb-2">
             <input type="hidden" name="operacao_id" value="<?= $op['id'] ?>">
             <input type="hidden" name="inicio" value="<?= $p[0] ?>">
             <input type="hidden" name="fim" value="<?= $p[1] ?>">
 
-            <button class="btn btn-outline-primary w-100">
+            <button class="btn btn-outline-primary w-100" type="submit">
                 Criar Período: <?= $p[0] ?> → <?= $p[1] ?>
             </button>
         </form>
     <?php endforeach; ?>
 
-    <hr>
+    <hr class="my-4">
 
     <h4>Períodos existentes</h4>
 
-    <?php if (empty($periodos)): ?>
+    <?php if (empty($periodosExistentes)): ?>
 
         <p>Nenhum período criado ainda.</p>
 
     <?php else: ?>
 
         <ul class="list-group">
-            <?php foreach ($periodos as $per): ?>
+            <?php foreach ($periodosExistentes as $per): ?>
                 <li class="list-group-item">
-                    <strong><?= $per['inicio'] ?> → <?= $per['fim'] ?></strong>
-
-                    <div class="mt-2">
-                        <a href="/captura.php?periodo=<?= $per['id'] ?>" class="btn btn-sm btn-success">
-                            Capturar Pesagens
-                        </a>
-
-                        <a href="/app/controllers/excluir_periodo.php?id=<?= $per['id'] ?>&op=<?= $op['id'] ?>"
-                           class="btn btn-sm btn-danger"
-                           onclick="return confirm('Excluir período?');">
-                            Excluir
-                        </a>
-                    </div>
+                    Início: <?= htmlspecialchars($per['inicio']) ?>
+                    — Fim: <?= htmlspecialchars($per['fim']) ?>
+                    <!-- Depois podemos pôr botões de abrir/editar/excluir aqui -->
                 </li>
             <?php endforeach; ?>
         </ul>
@@ -102,7 +89,6 @@ require_once __DIR__ . '/app/views/header.php';
     <?php endif; ?>
 
     <a href="/dashboard.php" class="btn btn-secondary mt-4">Voltar ao Dashboard</a>
-
 </div>
 
 <?php require_once __DIR__ . '/app/views/footer.php'; ?>
