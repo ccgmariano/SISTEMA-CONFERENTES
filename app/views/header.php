@@ -1,3 +1,6 @@
+<?php 
+require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
+?>
 <header class="topbar">
     <div class="topbar-inner">
         <div class="brand"><?php echo APP_NAME; ?></div>
