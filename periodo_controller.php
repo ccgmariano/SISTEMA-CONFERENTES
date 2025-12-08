@@ -1,27 +1,27 @@
 <?php
-require_once __DIR__ . '/config.php';
-require_login();
+session_start();
 
-$inicio = $_POST['inicio'] ?? null;
-$fim    = $_POST['fim'] ?? null;
-
-if (!$inicio || !$fim) {
-    die("Erro: preencha todos os campos.");
+// Garantir que existe operação ativa
+if (!isset($_SESSION['operacao'])) {
+    header("Location: /dashboard.php");
+    exit;
 }
 
-$novo_periodo = [
+// Validar período recebido
+if (!isset($_POST['inicio']) || !isset($_POST['fim'])) {
+    die("Erro: período inválido.");
+}
+
+$inicio = $_POST['inicio'];
+$fim    = $_POST['fim'];
+
+// Salvar período atual
+$_SESSION['periodo'] = [
     'inicio' => $inicio,
-    'fim'    => $fim,
+    'fim'    => $fim
 ];
 
-// Se ainda não existir array de períodos
-if (!isset($_SESSION['periodos'])) {
-    $_SESSION['periodos'] = [];
-}
-
-// Adiciona novo período
-$_SESSION['periodos'][] = $novo_periodo;
-
-// Volta para dashboard
-header("Location: /dashboard.php");
+// Após salvar o período, ir para captura.php
+header("Location: /captura.php");
 exit;
+?>
