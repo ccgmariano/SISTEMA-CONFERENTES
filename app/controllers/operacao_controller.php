@@ -21,4 +21,3 @@ $stmt->execute([$empresa, $navio, $produto, $recinto, $tipoOperacao]);
 
 header("Location: /dashboard.php");
 exit;
-?>
