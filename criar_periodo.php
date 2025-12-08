@@ -19,7 +19,8 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/app/views/header.php';
     <h3 class="mb-4">Selecione o Período</h3>
 
     <?php foreach ($periodos as $p): ?>
-        <form method="POST" action="/app/controllers/periodo_controller.php" class="mb-3">
+        <form method="post" action="/periodo_controller.php">
+
             <input type="hidden" name="inicio" value="<?= $dataHoje . 'T' . $p[0] ?>">
             <input type="hidden" name="fim" value="<?= $dataHoje . 'T' . $p[1] ?>">
 
