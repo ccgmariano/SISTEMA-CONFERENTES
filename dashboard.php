@@ -2,7 +2,10 @@
 require_once __DIR__ . '/config.php';
 require_login();
 require_once __DIR__ . '/app/views/header.php';
+// conectar banco
 require_once __DIR__ . '/app/database.php';
+$db = Database::connect();
+
 
 // -------------------------------------------
 // 1) Carregar operações do banco
