@@ -54,4 +54,9 @@ if ($response === false || $httpCode !== 200) {
 }
 
 // Simplesmente exibe o HTML retornado
-echo $response;
+// Remove warnings do HTML retornado
+$clean = preg_replace('/Warning:.*?<br>/is', '', $response);
+
+// Exibe a versão limpa
+echo $clean;
+
