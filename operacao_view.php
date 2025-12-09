@@ -44,13 +44,16 @@ require_once __DIR__ . '/app/views/header.php';
 
     <p>Selecione um período para criar:</p>
 
-    <?php
-    // HORÁRIOS OFICIAIS (como tínhamos deixado certo antes)
-    $periodosPadrao = [
-        ['07:00', '12:59'],
-        ['13:00', '18:59'],
-        ['19:00', '23:59'],
-        ['00:00', '06:59'],
+     // HORÁRIOS OFICIAIS (como tínhamos deixado certo antes)
+        <?php
+$periodosPadrao = [
+    ['07:00', '12:59'],
+    ['13:00', '18:59'],
+    ['19:00', '00:59'],
+    ['01:00', '06:59'],
+];
+?>
+
     ];
     ?>
 
