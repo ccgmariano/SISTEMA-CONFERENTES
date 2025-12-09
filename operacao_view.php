@@ -44,16 +44,13 @@ require_once __DIR__ . '/app/views/header.php';
 
     <p>Selecione um período para criar:</p>
 
-     // HORÁRIOS OFICIAIS (como tínhamos deixado certo antes)
-        <?php
-$periodosPadrao = [
-    ['07:00', '12:59'],
-    ['13:00', '18:59'],
-    ['19:00', '00:59'],
-    ['01:00', '06:59'],
-];
-?>
-
+    <?php
+    // HORÁRIOS OFICIAIS DO PORTO
+    $periodosPadrao = [
+        ['07:00', '12:59'],
+        ['13:00', '18:59'],
+        ['19:00', '00:59'],
+        ['01:00', '06:59'],
     ];
     ?>
 
@@ -81,10 +78,16 @@ $periodosPadrao = [
 
         <ul class="list-group">
             <?php foreach ($periodosExistentes as $per): ?>
-                <li class="list-group-item">
-                    Início: <?= htmlspecialchars($per['inicio']) ?>
-                    — Fim: <?= htmlspecialchars($per['fim']) ?>
-                    <!-- Depois podemos pôr botões de abrir/editar/excluir aqui -->
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>
+                        Início: <?= htmlspecialchars($per['inicio']) ?>
+                        — Fim: <?= htmlspecialchars($per['fim']) ?>
+                    </span>
+
+                    <a href="/periodo_view.php?id=<?= (int)$per['id'] ?>"
+                       class="btn btn-sm btn-outline-primary">
+                        Abrir período
+                    </a>
                 </li>
             <?php endforeach; ?>
         </ul>
