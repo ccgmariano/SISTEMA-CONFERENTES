@@ -49,7 +49,7 @@ require_once __DIR__ . '/app/views/header.php';
 
         <div class="mb-3" style="max-width: 250px;">
             <input type="date" name="data_base"
-                   value="<?= isset($_GET['data_base']) ? $_GET['data_base'] : date('Y-m-d') ?>"
+                   value="<?= isset($_GET['data_base']) ? $_GET['data_base'] : date('d-m-y') ?>"
                    class="form-control" required>
         </div>
 
@@ -60,13 +60,13 @@ require_once __DIR__ . '/app/views/header.php';
 
     <?php
     // DATA BASE PARA MONTAR OS PERÍODOS
-    $dataBase = isset($_GET['data_base']) ? $_GET['data_base'] : date('Y-m-d');
+    $dataBase = isset($_GET['data_base']) ? $_GET['data_base'] : date('d-m-y');
 
     // Converter para timestamp
     $tsBase = strtotime($dataBase);
 
     // Calcular datas de virada para períodos 3 e 4
-    $dataBaseMais1 = date('Y-m-d', $tsBase + 86400);
+    $dataBaseMais1 = date('d-m-y', $tsBase + 86400);
 
     // Períodos calculados com data + hora
     $periodosCalculados = [
