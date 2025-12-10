@@ -1,54 +1,44 @@
 <?php
+session_start();
+
 require_once __DIR__ . '/config.php';
 require_login();
 
 require_once __DIR__ . '/app/database.php';
 $db = Database::connect();
 
-$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-if ($id <= 0) {
-    header('Location: /dashboard.php');
-    exit;
+// ID do PERÍODO recebido via GET: /abrir_periodo.php?id=123
+$periodoId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+if ($periodoId <= 0) {
+    die('Período inválido.');
 }
 
-$sql = "
-    SELECT 
-        p.id,
-        p.inicio,
-        p.fim,
-        p.operacao_id,
-        o.empresa,
-        o.navio,
-        o.produto,
-        o.recinto,
-        o.tipo_operacao
-    FROM periodos p
-    JOIN operacoes o ON o.id = p.operacao_id
-    WHERE p.id = ?
-";
-$stmt = $db->prepare($sql);
-$stmt->execute([$id]);
-$per = $stmt->fetch(PDO::FETCH_ASSOC);
+// Busca o período
+$stmt = $db->prepare('SELECT * FROM periodos WHERE id = ?');
+$stmt->execute([$periodoId]);
+$periodo = $stmt->fetch(PDO::FETCH_ASSOC);
 
-if (!$per) {
-    header('Location: /dashboard.php');
-    exit;
+if (!$periodo) {
+    die('Período não encontrado.');
 }
 
-// Prepara sessão igual ao periodo_view.php
-$_SESSION['operacao'] = [
-    'empresa'       => $per['empresa'],
-    'navio'         => $per['navio'],
-    'produto'       => $per['produto'],
-    'recinto'       => $per['recinto'],
-    'tipo_operacao' => $per['tipo_operacao'],
-];
+// Busca a operação dona desse período
+$stmt = $db->prepare('SELECT * FROM operacoes WHERE id = ?');
+$stmt->execute([$periodo['operacao_id']]);
+$op = $stmt->fetch(PDO::FETCH_ASSOC);
 
+if (!$op) {
+    die('Operação não encontrada.');
+}
+
+// Guarda operação e período na sessão
+$_SESSION['operacao'] = $op;
 $_SESSION['periodo'] = [
-    'inicio' => $per['inicio'],
-    'fim'    => $per['fim'],
+    'id'     => $periodo['id'],      // <<< daqui vem o id para a captura
+    'inicio' => $periodo['inicio'],
+    'fim'    => $periodo['fim'],
 ];
 
-// Vai direto para captura
+// Vai para a tela de captura
 header('Location: /captura.php');
 exit;
