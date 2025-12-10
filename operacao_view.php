@@ -42,26 +42,64 @@ require_once __DIR__ . '/app/views/header.php';
 
     <h3>Períodos da Operação</h3>
 
-    <p>Selecione um período para criar:</p>
+    <p>Selecione a data base dos períodos:</p>
+
+    <form method="GET" action="">
+        <input type="hidden" name="id" value="<?= $op['id'] ?>">
+
+        <div class="mb-3" style="max-width: 250px;">
+            <input type="date" name="data_base"
+                   value="<?= isset($_GET['data_base']) ? $_GET['data_base'] : date('Y-m-d') ?>"
+                   class="form-control" required>
+        </div>
+
+        <button class="btn btn-primary mb-4" type="submit">
+            Atualizar Períodos
+        </button>
+    </form>
 
     <?php
-    // HORÁRIOS OFICIAIS DO PORTO
-    $periodosPadrao = [
-        ['07:00', '12:59'],
-        ['13:00', '18:59'],
-        ['19:00', '00:59'],
-        ['01:00', '06:59'],
+    // DATA BASE PARA MONTAR OS PERÍODOS
+    $dataBase = isset($_GET['data_base']) ? $_GET['data_base'] : date('Y-m-d');
+
+    // Converter para timestamp
+    $tsBase = strtotime($dataBase);
+
+    // Calcular datas de virada para períodos 3 e 4
+    $dataBaseMais1 = date('Y-m-d', $tsBase + 86400);
+
+    // Períodos calculados com data + hora
+    $periodosCalculados = [
+        [
+            'inicio' => $dataBase . ' 07:00',
+            'fim'    => $dataBase . ' 12:59'
+        ],
+        [
+            'inicio' => $dataBase . ' 13:00',
+            'fim'    => $dataBase . ' 18:59'
+        ],
+        [
+            'inicio' => $dataBase . ' 19:00',
+            'fim'    => $dataBaseMais1 . ' 00:59'
+        ],
+        [
+            'inicio' => $dataBaseMais1 . ' 01:00',
+            'fim'    => $dataBaseMais1 . ' 06:59'
+        ],
     ];
     ?>
 
-    <?php foreach ($periodosPadrao as $p): ?>
+    <h4>Selecionar Período para Criar</h4>
+
+    <?php foreach ($periodosCalculados as $p): ?>
         <form method="POST" action="/app/controllers/periodo_controller.php" class="mb-2">
+
             <input type="hidden" name="operacao_id" value="<?= $op['id'] ?>">
-            <input type="hidden" name="inicio" value="<?= $p[0] ?>">
-            <input type="hidden" name="fim" value="<?= $p[1] ?>">
+            <input type="hidden" name="inicio" value="<?= $p['inicio'] ?>">
+            <input type="hidden" name="fim" value="<?= $p['fim'] ?>">
 
             <button class="btn btn-outline-primary w-100" type="submit">
-                Criar Período: <?= $p[0] ?> → <?= $p[1] ?>
+                Criar Período: <?= $p['inicio'] ?> → <?= $p['fim'] ?>
             </button>
         </form>
     <?php endforeach; ?>
