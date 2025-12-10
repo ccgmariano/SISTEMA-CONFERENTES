@@ -40,69 +40,38 @@ require_once __DIR__ . '/app/views/header.php';
         <li class="list-group-item"><strong>Recinto:</strong> <?= htmlspecialchars($op['recinto']) ?></li>
     </ul>
 
-    <h3>Períodos da Operação</h3>
+    <h3>Criar novo período</h3>
+    <p>Escolha a data e selecione o período desejado.</p>
 
-    <p>Selecione a data base dos períodos:</p>
+    <!-- Escolha da DATA -->
+    <form method="POST" action="/app/controllers/periodo_controller.php" class="mb-4">
+        <label class="form-label fw-bold">Data do Período:</label>
+        <input type="date" class="form-control mb-3" name="data" required>
 
-    <form method="GET" action="">
-        <input type="hidden" name="id" value="<?= $op['id'] ?>">
+        <input type="hidden" name="operacao_id" value="<?= $op['id'] ?>">
 
-        <div class="mb-3" style="max-width: 250px;">
-            <input type="date" name="data_base"
-                   value="<?= isset($_GET['data_base']) ? $_GET['data_base'] : date('dd-mm-yyyy') ?>"
-                   class="form-control" required>
-        </div>
+        <label class="form-label fw-bold">Selecione o período:</label>
 
-        <button class="btn btn-primary mb-4" type="submit">
-            Atualizar Períodos
-        </button>
-    </form>
+        <?php
+        // HORÁRIOS OFICIAIS DO PORTO
+        $periodosPadrao = [
+            ['07:00', '12:59'],
+            ['13:00', '18:59'],
+            ['19:00', '00:59'],
+            ['01:00', '06:59'],
+        ];
+        ?>
 
-    <?php
-    // DATA BASE PARA MONTAR OS PERÍODOS
-    $dataBase = isset($_GET['data_base']) ? $_GET['data_base'] : date('dd-mm-yyyy');
-
-    // Converter para timestamp
-    $tsBase = strtotime($dataBase);
-
-    // Calcular datas de virada para períodos 3 e 4
-    $dataBaseMais1 = date('dd-mm-yyyy', $tsBase + 86400);
-
-    // Períodos calculados com data + hora
-    $periodosCalculados = [
-        [
-            'inicio' => $dataBase . ' 07:00',
-            'fim'    => $dataBase . ' 12:59'
-        ],
-        [
-            'inicio' => $dataBase . ' 13:00',
-            'fim'    => $dataBase . ' 18:59'
-        ],
-        [
-            'inicio' => $dataBase . ' 19:00',
-            'fim'    => $dataBaseMais1 . ' 00:59'
-        ],
-        [
-            'inicio' => $dataBaseMais1 . ' 01:00',
-            'fim'    => $dataBaseMais1 . ' 06:59'
-        ],
-    ];
-    ?>
-
-    <h4>Selecionar Período para Criar</h4>
-
-    <?php foreach ($periodosCalculados as $p): ?>
-        <form method="POST" action="/app/controllers/periodo_controller.php" class="mb-2">
-
-            <input type="hidden" name="operacao_id" value="<?= $op['id'] ?>">
-            <input type="hidden" name="inicio" value="<?= $p['inicio'] ?>">
-            <input type="hidden" name="fim" value="<?= $p['fim'] ?>">
-
-            <button class="btn btn-outline-primary w-100" type="submit">
-                Criar Período: <?= $p['inicio'] ?> → <?= $p['fim'] ?>
+        <?php foreach ($periodosPadrao as $p): ?>
+            <button name="inicio" value="<?= $p[0] ?>" 
+                    formaction="/app/controllers/periodo_controller.php"
+                    class="btn btn-outline-primary w-100 mb-2">
+                Criar Período: <?= $p[0] ?> → <?= $p[1] ?>
             </button>
-        </form>
-    <?php endforeach; ?>
+
+            <input type="hidden" name="fim_<?= $p[0] ?>" value="<?= $p[1] ?>">
+        <?php endforeach; ?>
+    </form>
 
     <hr class="my-4">
 
@@ -118,8 +87,8 @@ require_once __DIR__ . '/app/views/header.php';
             <?php foreach ($periodosExistentes as $per): ?>
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                     <span>
-                        Início: <?= htmlspecialchars($per['inicio']) ?>
-                        — Fim: <?= htmlspecialchars($per['fim']) ?>
+                        <strong><?= htmlspecialchars($per['data']) ?></strong>
+                        — <?= htmlspecialchars($per['inicio']) ?> → <?= htmlspecialchars($per['fim']) ?>
                     </span>
 
                     <a href="/periodo_view.php?id=<?= (int)$per['id'] ?>"
