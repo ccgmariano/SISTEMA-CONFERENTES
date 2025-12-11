@@ -5,13 +5,13 @@ require_login();
 require_once __DIR__ . '/app/database.php';
 $db = Database::connect();
 
-// ID da operação
+// ID da operação que veio pela URL
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($id <= 0) {
     die('Operação inválida.');
 }
 
-// Busca operação
+// Busca a operação
 $stmt = $db->prepare('SELECT * FROM operacoes WHERE id = ?');
 $stmt->execute([$id]);
 $op = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -20,8 +20,8 @@ if (!$op) {
     die('Operação não encontrada.');
 }
 
-// Busca períodos existentes
-$stmt = $db->prepare('SELECT * FROM periodos WHERE operacao_id = ? ORDER BY data, inicio');
+// Busca períodos já cadastrados para essa operação
+$stmt = $db->prepare('SELECT * FROM periodos WHERE operacao_id = ? ORDER BY id');
 $stmt->execute([$id]);
 $periodosExistentes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -43,48 +43,35 @@ require_once __DIR__ . '/app/views/header.php';
     <h3>Criar novo período</h3>
     <p>Escolha a data e selecione o período desejado.</p>
 
-    <!-- Seleção da data -->
-    <label class="form-label fw-bold">Data do Período:</label>
-    <input id="dataPeriodo" type="date" class="form-control mb-3" required>
+    <!-- FORM ÚNICO: data + seleção do período -->
+    <form method="POST" action="/app/controllers/periodo_controller.php">
 
-    <label class="form-label fw-bold mt-3">Selecione o período:</label>
+        <label class="form-label fw-bold">Data do Período:</label>
+        <input type="date" class="form-control mb-3" name="data" required>
 
-    <?php
-    // Períodos oficiais do porto
-    $periodosPadrao = [
-        ['07:00', '12:59'],
-        ['13:00', '18:59'],
-        ['19:00', '00:59'],
-        ['01:00', '06:59'],
-    ];
-    ?>
+        <input type="hidden" name="operacao_id" value="<?= $op['id'] ?>">
 
-    <?php foreach ($periodosPadrao as $p): ?>
-        <form method="POST" action="/app/controllers/periodo_controller.php" class="mb-2">
+        <label class="form-label fw-bold">Selecione o período:</label>
 
-            <input type="hidden" name="operacao_id" value="<?= $op['id'] ?>">
+        <?php
+        $periodosPadrao = [
+            ['07:00', '12:59'],
+            ['13:00', '18:59'],
+            ['19:00', '00:59'],
+            ['01:00', '06:59'],
+        ];
+        ?>
 
-            <!-- Data real do período -->
-            <input type="hidden" name="data" class="campoDataPeriodo">
-
-            <!-- Horários -->
-            <input type="hidden" name="inicio" value="<?= $p[0] ?>">
-            <input type="hidden" name="fim" value="<?= $p[1] ?>">
-
-            <button type="submit" class="btn btn-outline-primary w-100">
+        <?php foreach ($periodosPadrao as $p): ?>
+            <button type="submit"
+                    name="periodo_escolhido"
+                    value="<?= $p[0] . '|' . $p[1] ?>"
+                    class="btn btn-outline-primary w-100 mb-2">
                 Criar Período: <?= $p[0] ?> → <?= $p[1] ?>
             </button>
-        </form>
-    <?php endforeach; ?>
+        <?php endforeach; ?>
 
-    <script>
-        // Sempre que a data mudar, atualizar TODOS os formulários
-        document.getElementById('dataPeriodo').addEventListener('change', function () {
-            document.querySelectorAll('.campoDataPeriodo').forEach(el => {
-                el.value = this.value;
-            });
-        });
-    </script>
+    </form>
 
     <hr class="my-4">
 
@@ -96,25 +83,26 @@ require_once __DIR__ . '/app/views/header.php';
 
     <?php else: ?>
 
-        <ul class="list-group">
-            <?php foreach ($periodosExistentes as $per): ?>
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <span>
-                        <strong><?= htmlspecialchars($per['data']) ?></strong>
-                        — <?= htmlspecialchars($per['inicio']) ?> → <?= htmlspecialchars($per['fim']) ?>
-                    </span>
+    <ul class="list-group">
+        <?php foreach ($periodosExistentes as $per): ?>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span>
+                    <strong><?= htmlspecialchars($per['data']) ?></strong>
+                    — <?= htmlspecialchars($per['inicio']) ?> → <?= htmlspecialchars($per['fim']) ?>
+                </span>
 
-                    <a href="/periodo_view.php?id=<?= (int)$per['id'] ?>"
-                       class="btn btn-sm btn-outline-primary">
-                        Abrir período
-                    </a>
-                </li>
-            <?php endforeach; ?>
-        </ul>
+                <a href="/periodo_view.php?id=<?= (int)$per['id'] ?>"
+                   class="btn btn-sm btn-outline-primary">
+                    Abrir período
+                </a>
+            </li>
+        <?php endforeach; ?>
+    </ul>
 
     <?php endif; ?>
 
     <a href="/dashboard.php" class="btn btn-secondary mt-4">Voltar ao Dashboard</a>
+
 </div>
 
 <?php require_once __DIR__ . '/app/views/footer.php'; ?>
