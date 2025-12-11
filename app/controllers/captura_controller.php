@@ -3,120 +3,78 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_login();
 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/app/database.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/app/services/poseidon_login.php';
-
-$db = Database::connect();
 
 // ======================================================
-// 1. RECEBE O ID DO PERÍODO
+// CONFIG LOGIN POSEIDON
 // ======================================================
-$periodoId = isset($_GET['periodo_id']) ? (int)$_GET['periodo_id'] : 0;
-
-if ($periodoId <= 0) {
-    echo "<div class='alert alert-danger'>Período inválido.</div>";
-    exit;
-}
+$POSEIDON_LOGIN_URL = "https://poseidon.pimb.net.br/";
+$POSEIDON_RELATORIO_URL = "https://poseidon.pimb.net.br/consultas/view/83"; 
+$LOGIN_CPF = "01774863928";
+$LOGIN_SENHA = "cristiano017";
 
 // ======================================================
-// 2. BUSCA PERÍODO
+// 1. FAZ LOGIN NO POSEIDON E PEGA O COOKIE DA SESSÃO
 // ======================================================
-$stmt = $db->prepare("SELECT * FROM periodos WHERE id = ?");
-$stmt->execute([$periodoId]);
-$periodo = $stmt->fetch(PDO::FETCH_ASSOC);
+$cookieFile = tempnam(sys_get_temp_dir(), 'cookie_');
 
-if (!$periodo) {
-    echo "<div class='alert alert-danger'>Período não encontrado.</div>";
-    exit;
-}
-
-// ======================================================
-// 3. BUSCA OPERAÇÃO
-// ======================================================
-$stmt = $db->prepare("SELECT * FROM operacoes WHERE id = ?");
-$stmt->execute([$periodo['operacao_id']]);
-$operacao = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$operacao) {
-    echo "<div class='alert alert-danger'>Operação vinculada não encontrada.</div>";
-    exit;
-}
-
-// ======================================================
-// 4. CONVERTE DATAS PARA O FORMATO EXIGIDO PELO POSEIDON
-// ======================================================
-function brDateTime($dataISO, $hora)
-{
-    [$y, $m, $d] = explode('-', $dataISO);
-    return "{$d}/{$m}/{$y} {$hora}";
-}
-
-$dataInicioBR = brDateTime($periodo['data'], $periodo['inicio']);
-
-// Ajusta virada de dia (meia-noite)
-$dataFimISO = $periodo['data'];
-if ($periodo['fim'] === "00:59" || $periodo['fim'] === "00:00") {
-    $dataFimISO = date('Y-m-d', strtotime($periodo['data'] . ' +1 day'));
-}
-$dataFimBR = brDateTime($dataFimISO, $periodo['fim']);
-
-// ======================================================
-// 5. GARANTE LOGIN NO POSEIDON
-// ======================================================
-if (!poseidon_login()) {
-    echo "<div class='alert alert-danger'>Falha no login do Poseidon.</div>";
-    exit;
-}
-
-// ======================================================
-// 6. MONTA O POST EXATAMENTE IGUAL AO QUE O POSEIDON ESPERA
-// ======================================================
-$postFields = http_build_query([
-    '_method'     => 'POST',
-    'cpf'         => POSEIDON_CPF,
-    'data_inicio' => $dataInicioBR,
-    'data_fim'    => $dataFimBR,
-    'navio'       => $operacao['navio'],
-    'produto'     => '',     // deixamos vazio igual ao navegador
-    'recinto'     => ''      // deixamos vazio igual ao navegador
+$loginPostFields = http_build_query([
+    "_method" => "POST",
+    "cpf"     => $LOGIN_CPF,
+    "senha"   => $LOGIN_SENHA
 ]);
 
-$url = "https://poseidon.pimb.net.br/consultas/view/83";
+$ch = curl_init();
+curl_setopt_array($ch, [
+    CURLOPT_URL            => $POSEIDON_LOGIN_URL,
+    CURLOPT_POST           => true,
+    CURLOPT_POSTFIELDS     => $loginPostFields,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_FOLLOWLOCATION => false,
+    CURLOPT_COOKIEJAR      => $cookieFile,
+    CURLOPT_COOKIEFILE     => $cookieFile,
+    CURLOPT_HEADER         => true
+]);
 
-// ======================================================
-// 7. EXECUTA POST AUTENTICADO
-// ======================================================
-$ch = curl_init($url);
+$loginResponse = curl_exec($ch);
+$httpCode      = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, $postFields);
-
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-
-curl_setopt($ch, CURLOPT_COOKIEJAR,  POSEIDON_COOKIE_JAR);
-curl_setopt($ch, CURLOPT_COOKIEFILE, POSEIDON_COOKIE_JAR);
-
-curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-
-$response = curl_exec($ch);
-$code     = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-$err      = curl_error($ch);
+if ($loginResponse === false || $httpCode != 302) {
+    echo "<div class='alert alert-danger'>Falha no login do Poseidon. HTTP: $httpCode</div>";
+    exit;
+}
 
 curl_close($ch);
 
 // ======================================================
-// 8. ERROS
+// 2. AGORA FAZ A CONSULTA AUTENTICADA NO RELATÓRIO
 // ======================================================
-if ($response === false || $code !== 200) {
+$ch2 = curl_init();
+curl_setopt_array($ch2, [
+    CURLOPT_URL            => $POSEIDON_RELATORIO_URL,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_FOLLOWLOCATION => true,
+    CURLOPT_COOKIEFILE     => $cookieFile,
+    CURLOPT_COOKIEJAR      => $cookieFile
+]);
+
+$response = curl_exec($ch2);
+$httpCode2 = curl_getinfo($ch2, CURLINFO_HTTP_CODE);
+curl_close($ch2);
+
+unlink($cookieFile);
+
+// ======================================================
+// 3. VALIDA CONSULTA
+// ======================================================
+if ($response === false || $httpCode2 !== 200) {
     echo "<div class='alert alert-danger'>
-            Erro ao consultar Poseidon<br>
-            HTTP: {$code}<br>
-            Erro: {$err}
+            Erro ao consultar relatório do Poseidon<br>
+            HTTP: {$httpCode2}
           </div>";
     exit;
 }
 
 // ======================================================
-// 9. DEVOLVE A PÁGINA EXATAMENTE COMO O POSEIDON RESPONDE
+// 4. EXIBE O HTML COMPLETO DO RELATÓRIO
 // ======================================================
 echo $response;
