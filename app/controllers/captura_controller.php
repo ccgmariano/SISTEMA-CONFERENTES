@@ -4,46 +4,88 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_login();
 
-// Conferência: precisa existir operação e período na sessão
-if (!isset($_SESSION['operacao']) || !isset($_SESSION['periodo'])) {
-    echo "<div class='alert alert-warning'>Operação ou período não encontrado na sessão.</div>";
+require_once $_SERVER['DOCUMENT_ROOT'] . '/app/database.php';
+$db = Database::connect();
+
+// ======================================================
+// 1. RECEBE O ID DO PERÍODO PELA URL
+// ======================================================
+$periodoId = isset($_GET['periodo_id']) ? (int)$_GET['periodo_id'] : 0;
+
+if ($periodoId <= 0) {
+    echo "<div class='alert alert-danger'>Período inválido.</div>";
     exit;
 }
 
-$op  = $_SESSION['operacao'];
-$per = $_SESSION['periodo'];
+// ======================================================
+// 2. BUSCA O PERÍODO NO BANCO
+// ======================================================
+$stmt = $db->prepare("SELECT * FROM periodos WHERE id = ?");
+$stmt->execute([$periodoId]);
+$periodo = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// Dados mínimos necessários
-$navio  = $op['navio']  ?? '';
-$inicio = $per['inicio'] ?? '';
-$fim    = $per['fim']    ?? '';
+if (!$periodo) {
+    echo "<div class='alert alert-danger'>Período não encontrado.</div>";
+    exit;
+}
 
-if (!$navio || !$inicio || !$fim) {
+// ======================================================
+// 3. BUSCA A OPERAÇÃO CORRESPONDENTE
+// ======================================================
+$stmt = $db->prepare("SELECT * FROM operacoes WHERE id = ?");
+$stmt->execute([$periodo['operacao_id']]);
+$operacao = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$operacao) {
+    echo "<div class='alert alert-danger'>Operação vinculada não encontrada.</div>";
+    exit;
+}
+
+// ======================================================
+// 4. DADOS NECESSÁRIOS PARA A CONSULTA
+// ======================================================
+$navio  = $operacao['navio'];
+$data   = $periodo['data'];   // formato: YYYY-MM-DD
+$inicio = $periodo['inicio']; // ex: 07:00
+$fim    = $periodo['fim'];    // ex: 12:59
+
+if (!$navio || !$data || !$inicio || !$fim) {
     echo "<div class='alert alert-danger'>Dados incompletos para consulta.</div>";
     exit;
 }
 
-/*
- * Converte de ISO (2025-12-10 07:00)
- * para DD/MM/AAAA HH:MM (10/12/2025 07:00)
- */
-function isoToBRDateTime($iso)
+// ======================================================
+// 5. CONVERTE PARA FORMATO BR: DD/MM/AAAA HH:MM
+// ======================================================
+function brDateTime($dataISO, $hora)
 {
-    if (!str_contains($iso, ' ')) {
-        return '';
-    }
-
-    [$data, $hora] = explode(' ', $iso);
-    [$ano, $mes, $dia] = explode('-', $data);
-
-    return "{$dia}/{$mes}/{$ano} {$hora}";
+    // dataISO = YYYY-MM-DD
+    [$y, $m, $d] = explode('-', $dataISO);
+    return "{$d}/{$m}/{$y} {$hora}";
 }
 
-$inicioBR = isoToBRDateTime($inicio);
-$fimBR    = isoToBRDateTime($fim);
+$inicioBR = brDateTime($data, $inicio);
 
-// Monta URL da consulta real
+// Caso o período atravesse a meia-noite (ex: 19:00 → 00:59)
+if ($fim === "00:59" || $fim === "00:00") {
+    // fim pertence ao dia seguinte
+    $dataFim = date('Y-m-d', strtotime($data . ' +1 day'));
+} elseif ($inicio === "19:00" && $fim === "00:59") {
+    $dataFim = date('Y-m-d', strtotime($data . ' +1 day'));
+} elseif ($inicio === "01:00" && $fim === "06:59") {
+    // já é naturalmente dia seguinte
+    $dataFim = $data;
+} else {
+    $dataFim = $data;
+}
+
+$fimBR = brDateTime($dataFim, $fim);
+
+// ======================================================
+// 6. MONTA A URL DA CONSULTA
+// ======================================================
 $baseUrl = "https://conferentes.app.br/teste.php";
+
 $query = http_build_query([
     'navio'   => $navio,
     'inicio'  => $inicioBR,
@@ -52,7 +94,9 @@ $query = http_build_query([
 
 $url = $baseUrl . '?' . $query;
 
-// Requisição servidor → conferentes.app.br
+// ======================================================
+// 7. REQUISIÇÃO AO SERVIDOR EXTERNO
+// ======================================================
 $ch = curl_init($url);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
@@ -61,17 +105,22 @@ curl_setopt($ch, CURLOPT_TIMEOUT, 30);
 $response = curl_exec($ch);
 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 $curlErr  = curl_error($ch);
+
 curl_close($ch);
 
-// Erro de consulta
+// ======================================================
+// 8. ERRO NA CONSULTA
+// ======================================================
 if ($response === false || $httpCode !== 200) {
     echo "<div class='alert alert-danger'>
-            Falha ao consultar Poseidon<br>
+            Erro ao consultar Poseidon<br>
             HTTP: {$httpCode}<br>
             Erro cURL: " . htmlspecialchars($curlErr) . "
           </div>";
     exit;
 }
 
-// Retorna o HTML exatamente como recebido
+// ======================================================
+// 9. RETORNA HTML CRU (igual ao teste.php)
+// ======================================================
 echo $response;
