@@ -1,19 +1,14 @@
-<?php 
-// app/controllers/captura_controller.php
-
+<?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_login();
 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/app/database.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/app/services/poseidon_login.php';
+
 $db = Database::connect();
 
 // ======================================================
-// 0. CPF TEMPORÁRIO (será removido quando login real existir)
-// ======================================================
-$cpf = "01774863928";  // <<< CPF FIXO PARA TESTES
-
-// ======================================================
-// 1. RECEBE O ID DO PERÍODO PELA URL
+// 1. RECEBE O ID DO PERÍODO
 // ======================================================
 $periodoId = isset($_GET['periodo_id']) ? (int)$_GET['periodo_id'] : 0;
 
@@ -23,7 +18,7 @@ if ($periodoId <= 0) {
 }
 
 // ======================================================
-// 2. BUSCA O PERÍODO NO BANCO
+// 2. BUSCA PERÍODO
 // ======================================================
 $stmt = $db->prepare("SELECT * FROM periodos WHERE id = ?");
 $stmt->execute([$periodoId]);
@@ -35,7 +30,7 @@ if (!$periodo) {
 }
 
 // ======================================================
-// 3. BUSCA A OPERAÇÃO CORRESPONDENTE
+// 3. BUSCA OPERAÇÃO
 // ======================================================
 $stmt = $db->prepare("SELECT * FROM operacoes WHERE id = ?");
 $stmt->execute([$periodo['operacao_id']]);
@@ -47,20 +42,7 @@ if (!$operacao) {
 }
 
 // ======================================================
-// 4. DADOS NECESSÁRIOS PARA A CONSULTA
-// ======================================================
-$navio  = $operacao['navio'];
-$data   = $periodo['data'];   // formato: YYYY-MM-DD
-$inicio = $periodo['inicio']; // ex: 07:00
-$fim    = $periodo['fim'];    // ex: 12:59
-
-if (!$navio || !$data || !$inicio || !$fim) {
-    echo "<div class='alert alert-danger'>Dados incompletos para consulta.</div>";
-    exit;
-}
-
-// ======================================================
-// 5. CONVERTE YYYY-MM-DD HH:MM PARA DD/MM/YYYY HH:MM
+// 4. MONTA DATAS EM FORMATO BR
 // ======================================================
 function brDateTime($dataISO, $hora)
 {
@@ -68,62 +50,43 @@ function brDateTime($dataISO, $hora)
     return "{$d}/{$m}/{$y} {$hora}";
 }
 
-$inicioBR = brDateTime($data, $inicio);
+$dataInicio = brDateTime($periodo['data'], $periodo['inicio']);
 
-// Caso o período atravesse a meia-noite (19:00 → 00:59)
-if ($fim === "00:59" || $fim === "00:00") {
-    $dataFim = date('Y-m-d', strtotime($data . ' +1 day'));
-} elseif ($inicio === "19:00" && $fim === "00:59") {
-    $dataFim = date('Y-m-d', strtotime($data . ' +1 day'));
-} elseif ($inicio === "01:00" && $fim === "06:59") {
-    $dataFim = $data; // madrugada já pertence ao próprio dia informado
-} else {
-    $dataFim = $data;
+// Ajusta virada de dia (meia-noite)
+$dataFimISO = $periodo['data'];
+if ($periodo['fim'] === "00:59" || $periodo['fim'] === "00:00") {
+    $dataFimISO = date('Y-m-d', strtotime($periodo['data'] . ' +1 day'));
 }
 
-$fimBR = brDateTime($dataFim, $fim);
+$dataFim = brDateTime($dataFimISO, $periodo['fim']);
 
 // ======================================================
-// 6. MONTA A URL DA CONSULTA REAL (Poseidon via teste.php)
+// 5. URL REAL DO POSEIDON PARA PEGAR AS PESAGENS
 // ======================================================
-$baseUrl = "https://conferentes.app.br/teste.php";
-
-$query = http_build_query([
-    'cpf'     => $cpf,
-    'navio'   => $navio,
-    'inicio'  => $inicioBR,
-    'termino' => $fimBR,
-]);
-
-$url = $baseUrl . '?' . $query;
-
-// ======================================================
-// 7. REQUISIÇÃO AO SERVIDOR EXTERNO
-// ======================================================
-$ch = curl_init($url);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-
-$response = curl_exec($ch);
-$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-$curlErr  = curl_error($ch);
-
-curl_close($ch);
+//
+// IMPORTANTE: aqui precisa colocar a URL EXATA da consulta de pesagens
+// do Poseidon. Até agora você só me mostrou a consulta da área
+// Conferentes.app.
+//
+// Assim que você me enviar a URL real da página de pesagens,
+// eu ajusto aqui.
+//
+// Por enquanto deixamos esta URL temporária:
+//
+$consultaUrl = "https://poseidon.pimb.net.br/consultas/view/83?"
+    . http_build_query([
+        'cpf'        => POSEIDON_CPF,
+        'data_inicio'=> $dataInicio,
+        'data_fim'   => $dataFim,
+        'navio'      => $operacao['navio'],
+    ]);
 
 // ======================================================
-// 8. ERRO NA CONSULTA
+// 6. EXECUTA REQUISIÇÃO AUTENTICADA
 // ======================================================
-if ($response === false || $httpCode !== 200) {
-    echo "<div class='alert alert-danger'>
-            Erro ao consultar Poseidon<br>
-            HTTP: {$httpCode}<br>
-            Erro cURL: " . htmlspecialchars($curlErr) . "
-          </div>";
-    exit;
-}
+$html = poseidon_get($consultaUrl);
 
 // ======================================================
-// 9. EXIBE HTML CRU (recebido do servidor externo)
+// 7. MOSTRA HTML EXATAMENTE COMO VEM DO POSEIDON
 // ======================================================
-echo $response;
+echo $html;
