@@ -5,13 +5,13 @@ require_login();
 require_once __DIR__ . '/app/database.php';
 $db = Database::connect();
 
-// ID da operação que veio pela URL
+// ID da operação
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($id <= 0) {
     die('Operação inválida.');
 }
 
-// Busca a operação
+// Busca operação
 $stmt = $db->prepare('SELECT * FROM operacoes WHERE id = ?');
 $stmt->execute([$id]);
 $op = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -20,8 +20,8 @@ if (!$op) {
     die('Operação não encontrada.');
 }
 
-// Busca períodos já cadastrados para essa operação
-$stmt = $db->prepare('SELECT * FROM periodos WHERE operacao_id = ? ORDER BY inicio');
+// Busca períodos existentes
+$stmt = $db->prepare('SELECT * FROM periodos WHERE operacao_id = ? ORDER BY data, inicio');
 $stmt->execute([$id]);
 $periodosExistentes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -43,35 +43,48 @@ require_once __DIR__ . '/app/views/header.php';
     <h3>Criar novo período</h3>
     <p>Escolha a data e selecione o período desejado.</p>
 
-    <!-- Escolha da DATA -->
-    <form method="POST" action="/app/controllers/periodo_controller.php" class="mb-4">
-        <label class="form-label fw-bold">Data do Período:</label>
-        <input type="date" class="form-control mb-3" name="data" required>
+    <!-- Seleção da data -->
+    <label class="form-label fw-bold">Data do Período:</label>
+    <input id="dataPeriodo" type="date" class="form-control mb-3" required>
 
-        <input type="hidden" name="operacao_id" value="<?= $op['id'] ?>">
+    <label class="form-label fw-bold mt-3">Selecione o período:</label>
 
-        <label class="form-label fw-bold">Selecione o período:</label>
+    <?php
+    // Períodos oficiais do porto
+    $periodosPadrao = [
+        ['07:00', '12:59'],
+        ['13:00', '18:59'],
+        ['19:00', '00:59'],
+        ['01:00', '06:59'],
+    ];
+    ?>
 
-        <?php
-        // HORÁRIOS OFICIAIS DO PORTO
-        $periodosPadrao = [
-            ['07:00', '12:59'],
-            ['13:00', '18:59'],
-            ['19:00', '00:59'],
-            ['01:00', '06:59'],
-        ];
-        ?>
+    <?php foreach ($periodosPadrao as $p): ?>
+        <form method="POST" action="/app/controllers/periodo_controller.php" class="mb-2">
 
-        <?php foreach ($periodosPadrao as $p): ?>
-            <button name="inicio" value="<?= $p[0] ?>" 
-                    formaction="/app/controllers/periodo_controller.php"
-                    class="btn btn-outline-primary w-100 mb-2">
+            <input type="hidden" name="operacao_id" value="<?= $op['id'] ?>">
+
+            <!-- Data real do período -->
+            <input type="hidden" name="data" class="campoDataPeriodo">
+
+            <!-- Horários -->
+            <input type="hidden" name="inicio" value="<?= $p[0] ?>">
+            <input type="hidden" name="fim" value="<?= $p[1] ?>">
+
+            <button type="submit" class="btn btn-outline-primary w-100">
                 Criar Período: <?= $p[0] ?> → <?= $p[1] ?>
             </button>
+        </form>
+    <?php endforeach; ?>
 
-            <input type="hidden" name="fim_<?= $p[0] ?>" value="<?= $p[1] ?>">
-        <?php endforeach; ?>
-    </form>
+    <script>
+        // Sempre que a data mudar, atualizar TODOS os formulários
+        document.getElementById('dataPeriodo').addEventListener('change', function () {
+            document.querySelectorAll('.campoDataPeriodo').forEach(el => {
+                el.value = this.value;
+            });
+        });
+    </script>
 
     <hr class="my-4">
 
