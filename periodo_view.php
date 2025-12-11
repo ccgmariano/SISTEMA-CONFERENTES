@@ -5,77 +5,95 @@ require_login();
 require_once __DIR__ . '/app/database.php';
 $db = Database::connect();
 
-// ID do período
-$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-if ($id <= 0) {
-    die('Período inválido.');
+// ======================================================
+// 1. RECEBE O ID DO PERÍODO
+// ======================================================
+$periodoId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
+if ($periodoId <= 0) {
+    die("Período inválido.");
 }
 
-// Busca período + operação (join)
-$sql = "
-    SELECT 
-        p.id,
-        p.inicio,
-        p.fim,
-        p.operacao_id,
-        o.empresa,
-        o.navio,
-        o.produto,
-        o.recinto,
-        o.tipo_operacao
-    FROM periodos p
-    JOIN operacoes o ON o.id = p.operacao_id
-    WHERE p.id = ?
-";
-$stmt = $db->prepare($sql);
-$stmt->execute([$id]);
-$per = $stmt->fetch(PDO::FETCH_ASSOC);
+// ======================================================
+// 2. BUSCA O PERÍODO
+// ======================================================
+$stmt = $db->prepare("SELECT * FROM periodos WHERE id = ?");
+$stmt->execute([$periodoId]);
+$periodo = $stmt->fetch(PDO::FETCH_ASSOC);
 
-if (!$per) {
-    die('Período não encontrado.');
+if (!$periodo) {
+    die("Período não encontrado.");
 }
 
-// Monta as variáveis de sessão usadas em captura.php
-$_SESSION['operacao'] = [
-    'empresa'       => $per['empresa'],
-    'navio'         => $per['navio'],
-    'produto'       => $per['produto'],
-    'recinto'       => $per['recinto'],
-    'tipo_operacao' => $per['tipo_operacao'],
-];
+// ======================================================
+// 3. BUSCA A OPERAÇÃO
+// ======================================================
+$stmt = $db->prepare("SELECT * FROM operacoes WHERE id = ?");
+$stmt->execute([$periodo['operacao_id']]);
+$operacao = $stmt->fetch(PDO::FETCH_ASSOC);
 
-$_SESSION['periodo'] = [
-    'inicio' => $per['inicio'],
-    'fim'    => $per['fim'],
-];
+if (!$operacao) {
+    die("Operação vinculada ao período não encontrada.");
+}
 
 require_once __DIR__ . '/app/views/header.php';
 ?>
 
-<div class="container mt-4" style="max-width: 700px;">
+<div class="container mt-4">
 
     <h2>Período da Operação</h2>
 
     <ul class="list-group mb-4">
-        <li class="list-group-item"><strong>Empresa:</strong> <?= htmlspecialchars($per['empresa']) ?></li>
-        <li class="list-group-item"><strong>Tipo de Operação:</strong> <?= htmlspecialchars($per['tipo_operacao']) ?></li>
-        <li class="list-group-item"><strong>Navio:</strong> <?= htmlspecialchars($per['navio']) ?></li>
-        <li class="list-group-item"><strong>Produto:</strong> <?= htmlspecialchars($per['produto']) ?></li>
-        <li class="list-group-item"><strong>Recinto:</strong> <?= htmlspecialchars($per['recinto']) ?></li>
-        <li class="list-group-item"><strong>Início:</strong> <?= htmlspecialchars($per['inicio']) ?></li>
-        <li class="list-group-item"><strong>Fim:</strong> <?= htmlspecialchars($per['fim']) ?></li>
+        <li class="list-group-item"><strong>Data:</strong> <?= htmlspecialchars($periodo['data']) ?></li>
+        <li class="list-group-item"><strong>Início:</strong> <?= htmlspecialchars($periodo['inicio']) ?></li>
+        <li class="list-group-item"><strong>Fim:</strong> <?= htmlspecialchars($periodo['fim']) ?></li>
+        <li class="list-group-item"><strong>Criado em:</strong> <?= htmlspecialchars($periodo['criado_em']) ?></li>
     </ul>
 
-    <p class="text-muted">
-        Esses dados já estão na sessão e serão usados para buscar as pesagens no Poseidon.
-    </p>
+    <h4>Dados da Operação</h4>
+    <ul class="list-group mb-4">
+        <li class="list-group-item"><strong>Empresa:</strong> <?= htmlspecialchars($operacao['empresa']) ?></li>
+        <li class="list-group-item"><strong>Navio:</strong> <?= htmlspecialchars($operacao['navio']) ?></li>
+        <li class="list-group-item"><strong>Tipo:</strong> <?= htmlspecialchars($operacao['tipo_operacao']) ?></li>
+        <li class="list-group-item"><strong>Produto:</strong> <?= htmlspecialchars($operacao['produto']) ?></li>
+        <li class="list-group-item"><strong>Recinto:</strong> <?= htmlspecialchars($operacao['recinto']) ?></li>
+    </ul>
 
-    <a href="/captura.php" class="btn btn-primary w-100 mb-3">
-        Ir para Captura
-    </a>
+    <hr>
 
-    <a href="/operacao_view.php?id=<?= (int)$per['operacao_id'] ?>" class="btn btn-secondary w-100">
-        Voltar à Operação
+    <h4>Captura de Pesagens</h4>
+
+    <button id="btnCapturar" class="btn btn-success w-100 mb-3">
+        Capturar Pesagens do Período
+    </button>
+
+    <div id="resultadoCaptura" class="mt-3"></div>
+
+    <script>
+        document.getElementById('btnCapturar').addEventListener('click', function () {
+            const btn = this;
+            const divResultado = document.getElementById('resultadoCaptura');
+
+            btn.disabled = true;
+            btn.innerText = "Consultando Poseidon...";
+
+            fetch("/app/controllers/captura_controller.php?periodo_id=<?= $periodoId ?>")
+                .then(r => r.text())
+                .then(html => {
+                    divResultado.innerHTML = html;
+                })
+                .catch(err => {
+                    divResultado.innerHTML = "<div class='alert alert-danger'>Erro na captura.</div>";
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.innerText = "Capturar Pesagens do Período";
+                });
+        });
+    </script>
+
+    <a href="/operacao_view.php?id=<?= $operacao['id'] ?>" class="btn btn-secondary mt-4">
+        Voltar para Operação
     </a>
 
 </div>
