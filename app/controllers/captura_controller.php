@@ -1,4 +1,4 @@
-<?php
+<?php 
 // app/controllers/captura_controller.php
 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
@@ -6,6 +6,11 @@ require_login();
 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/app/database.php';
 $db = Database::connect();
+
+// ======================================================
+// 0. CPF TEMPORÁRIO (será removido quando login real existir)
+// ======================================================
+$cpf = "01774863928";  // <<< CPF FIXO PARA TESTES
 
 // ======================================================
 // 1. RECEBE O ID DO PERÍODO PELA URL
@@ -55,26 +60,23 @@ if (!$navio || !$data || !$inicio || !$fim) {
 }
 
 // ======================================================
-// 5. CONVERTE PARA FORMATO BR: DD/MM/AAAA HH:MM
+// 5. CONVERTE YYYY-MM-DD HH:MM PARA DD/MM/YYYY HH:MM
 // ======================================================
 function brDateTime($dataISO, $hora)
 {
-    // dataISO = YYYY-MM-DD
     [$y, $m, $d] = explode('-', $dataISO);
     return "{$d}/{$m}/{$y} {$hora}";
 }
 
 $inicioBR = brDateTime($data, $inicio);
 
-// Caso o período atravesse a meia-noite (ex: 19:00 → 00:59)
+// Caso o período atravesse a meia-noite (19:00 → 00:59)
 if ($fim === "00:59" || $fim === "00:00") {
-    // fim pertence ao dia seguinte
     $dataFim = date('Y-m-d', strtotime($data . ' +1 day'));
 } elseif ($inicio === "19:00" && $fim === "00:59") {
     $dataFim = date('Y-m-d', strtotime($data . ' +1 day'));
 } elseif ($inicio === "01:00" && $fim === "06:59") {
-    // já é naturalmente dia seguinte
-    $dataFim = $data;
+    $dataFim = $data; // madrugada já pertence ao próprio dia informado
 } else {
     $dataFim = $data;
 }
@@ -82,11 +84,12 @@ if ($fim === "00:59" || $fim === "00:00") {
 $fimBR = brDateTime($dataFim, $fim);
 
 // ======================================================
-// 6. MONTA A URL DA CONSULTA
+// 6. MONTA A URL DA CONSULTA REAL (Poseidon via teste.php)
 // ======================================================
 $baseUrl = "https://conferentes.app.br/teste.php";
 
 $query = http_build_query([
+    'cpf'     => $cpf,
     'navio'   => $navio,
     'inicio'  => $inicioBR,
     'termino' => $fimBR,
@@ -121,6 +124,6 @@ if ($response === false || $httpCode !== 200) {
 }
 
 // ======================================================
-// 9. RETORNA HTML CRU (igual ao teste.php)
+// 9. EXIBE HTML CRU (recebido do servidor externo)
 // ======================================================
 echo $response;
