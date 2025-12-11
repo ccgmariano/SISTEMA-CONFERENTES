@@ -42,7 +42,7 @@ if (!$operacao) {
 }
 
 // ======================================================
-// 4. MONTA DATAS EM FORMATO BR
+// 4. CONVERTE DATAS PARA O FORMATO EXIGIDO PELO POSEIDON
 // ======================================================
 function brDateTime($dataISO, $hora)
 {
@@ -50,43 +50,73 @@ function brDateTime($dataISO, $hora)
     return "{$d}/{$m}/{$y} {$hora}";
 }
 
-$dataInicio = brDateTime($periodo['data'], $periodo['inicio']);
+$dataInicioBR = brDateTime($periodo['data'], $periodo['inicio']);
 
 // Ajusta virada de dia (meia-noite)
 $dataFimISO = $periodo['data'];
 if ($periodo['fim'] === "00:59" || $periodo['fim'] === "00:00") {
     $dataFimISO = date('Y-m-d', strtotime($periodo['data'] . ' +1 day'));
 }
-
-$dataFim = brDateTime($dataFimISO, $periodo['fim']);
-
-// ======================================================
-// 5. URL REAL DO POSEIDON PARA PEGAR AS PESAGENS
-// ======================================================
-//
-// IMPORTANTE: aqui precisa colocar a URL EXATA da consulta de pesagens
-// do Poseidon. Até agora você só me mostrou a consulta da área
-// Conferentes.app.
-//
-// Assim que você me enviar a URL real da página de pesagens,
-// eu ajusto aqui.
-//
-// Por enquanto deixamos esta URL temporária:
-//
-$consultaUrl = "https://poseidon.pimb.net.br/consultas/view/83?"
-    . http_build_query([
-        'cpf'        => POSEIDON_CPF,
-        'data_inicio'=> $dataInicio,
-        'data_fim'   => $dataFim,
-        'navio'      => $operacao['navio'],
-    ]);
+$dataFimBR = brDateTime($dataFimISO, $periodo['fim']);
 
 // ======================================================
-// 6. EXECUTA REQUISIÇÃO AUTENTICADA
+// 5. GARANTE LOGIN NO POSEIDON
 // ======================================================
-$html = poseidon_get($consultaUrl);
+if (!poseidon_login()) {
+    echo "<div class='alert alert-danger'>Falha no login do Poseidon.</div>";
+    exit;
+}
 
 // ======================================================
-// 7. MOSTRA HTML EXATAMENTE COMO VEM DO POSEIDON
+// 6. MONTA O POST EXATAMENTE IGUAL AO QUE O POSEIDON ESPERA
 // ======================================================
-echo $html;
+$postFields = http_build_query([
+    '_method'     => 'POST',
+    'cpf'         => POSEIDON_CPF,
+    'data_inicio' => $dataInicioBR,
+    'data_fim'    => $dataFimBR,
+    'navio'       => $operacao['navio'],
+    'produto'     => '',     // deixamos vazio igual ao navegador
+    'recinto'     => ''      // deixamos vazio igual ao navegador
+]);
+
+$url = "https://poseidon.pimb.net.br/consultas/view/83";
+
+// ======================================================
+// 7. EXECUTA POST AUTENTICADO
+// ======================================================
+$ch = curl_init($url);
+
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, $postFields);
+
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+
+curl_setopt($ch, CURLOPT_COOKIEJAR,  POSEIDON_COOKIE_JAR);
+curl_setopt($ch, CURLOPT_COOKIEFILE, POSEIDON_COOKIE_JAR);
+
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+$response = curl_exec($ch);
+$code     = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$err      = curl_error($ch);
+
+curl_close($ch);
+
+// ======================================================
+// 8. ERROS
+// ======================================================
+if ($response === false || $code !== 200) {
+    echo "<div class='alert alert-danger'>
+            Erro ao consultar Poseidon<br>
+            HTTP: {$code}<br>
+            Erro: {$err}
+          </div>";
+    exit;
+}
+
+// ======================================================
+// 9. DEVOLVE A PÁGINA EXATAMENTE COMO O POSEIDON RESPONDE
+// ======================================================
+echo $response;
