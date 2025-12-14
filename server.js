@@ -1,25 +1,21 @@
 const express = require("express");
 const app = express();
 
-// Permite processar form-urlencoded (necessário para POST)
+// Permite o Express interpretar body de formulários (necessário para POST)
 app.use(express.urlencoded({ extended: true }));
-
-// Permite json (não obrigatório, mas útil)
 app.use(express.json());
 
-// Importa rotas do Poseidon (caminho relativo ao server.js)
-app.use(
-  "/experimental/poseidon",
-  require("./sistema-conferentes/experimental/poseidonroutes")
-);
+// ROTA EXPERIMENTAL (Poseidon) – AQUI ESTÁ A LINHA QUE VOCÊ PEDIU
+app.use("/experimental/poseidon", require("./experimental/poseidonroutes"));
 
-// Rota simples para confirmar que o servidor subiu
+// Rota simples para testar se o servidor está no ar
 app.get("/", (req, res) => {
-  res.send("Servidor ativo. Use /experimental/poseidon/teste");
+  res.send("Servidor ativo. Rota experimental: /experimental/poseidon/teste");
 });
 
-// Porta do Render
+// Porta automática do Render
 const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
   console.log("Servidor rodando na porta " + PORT);
 });
