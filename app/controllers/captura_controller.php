@@ -1,4 +1,5 @@
 <?php
+
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_login();
 
@@ -7,7 +8,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/app/database.php';
 // ======================================================
 // 1. VALIDAR PERIODO_ID
 // ======================================================
-$periodoId = isset($_GET['periodo_id']) ? (int)$_GET['periodo_id'] : 0;
+$periodoId = isset($_GET['periodo_id']) ? (int) $_GET['periodo_id'] : 0;
 
 if ($periodoId <= 0) {
     echo "<div class='alert alert-danger'>Período inválido.</div>";
@@ -17,7 +18,7 @@ if ($periodoId <= 0) {
 // ======================================================
 // 2. BUSCAR PERÍODO + OPERAÇÃO NO BANCO
 // ======================================================
-$db = getDatabase();
+$db = Database::connect();
 
 $sql = "
     SELECT 
@@ -82,7 +83,7 @@ if ($response === false || $httpCode !== 200) {
 
 $data = json_decode($response, true);
 
-if (!$data || !$data['ok']) {
+if (!$data || !isset($data['ok']) || !$data['ok']) {
     echo "<div class='alert alert-danger'>Resposta inválida do servidor.</div>";
     exit;
 }
