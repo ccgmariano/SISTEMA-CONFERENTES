@@ -1,28 +1,26 @@
 <?php
 
-class Database {
+class Database
+{
+    private static $db = null;
 
-    private static $db;
+    public static function connect()
+    {
+        if (self::$db === null) {
 
-    public static function connect() {
-
-        if (!self::$db) {
-
-            $dir  = '/var/data';
+            // Caminho do disco persistente (Render)
+            $dir  = '/var/data/db';
             $path = $dir . '/sistema_conferentes.sqlite';
 
-            // Garantir que o diretório existe
+            // Garante que o subdiretório exista
             if (!is_dir($dir)) {
-                mkdir($dir, 0777, true);
+                mkdir($dir, 0755, true);
             }
 
-            // Garantir permissão de escrita
-            if (!is_writable($dir)) {
-                chmod($dir, 0777);
-            }
-
-            self::$db = new PDO("sqlite:" . $path);
+            // Conexão SQLite (o próprio SQLite cria o arquivo)
+            self::$db = new PDO('sqlite:' . $path);
             self::$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            self::$db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
         }
 
         return self::$db;
