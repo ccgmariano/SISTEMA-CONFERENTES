@@ -8,13 +8,17 @@ class Database {
 
         if (!self::$db) {
 
-            // Local correto no Render (permite escrita)
-            $path = '/var/data/sistema_conferentes.sqlite';
+            $dir  = '/var/data';
+            $path = $dir . '/sistema_conferentes.sqlite';
 
+            // Garantir que o diretório existe
+            if (!is_dir($dir)) {
+                mkdir($dir, 0777, true);
+            }
 
-            // Se não existir, cria o arquivo
-            if (!file_exists($path)) {
-                file_put_contents($path, '');
+            // Garantir permissão de escrita
+            if (!is_writable($dir)) {
+                chmod($dir, 0777);
             }
 
             self::$db = new PDO("sqlite:" . $path);
@@ -24,4 +28,3 @@ class Database {
         return self::$db;
     }
 }
-?>
