@@ -9,7 +9,8 @@ class Database {
         if (!self::$db) {
 
             // Local correto no Render (permite escrita)
-            $path = '/tmp/sistema_conferentes.sqlite';
+            $path = '/var/data/sistema_conferentes.sqlite';
+
 
             // Se não existir, cria o arquivo
             if (!file_exists($path)) {
