@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Teste Poseidon</title>
+</head>
+<body>
+  <h1>Teste Poseidon</h1>
+  <button id="btn">Buscar Pesagens</button>
+
+  <pre id="resultado"></pre>
+
+  <script>
+    document.getElementById("btn").onclick = async () => {
+      const res = await fetch(
+        "https://sistema-conferentes-node.onrender.com/poseidon/pesagens",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            data_inicio: "10/12/2025 09:15",
+            data_fim: "16/12/2025 09:15",
+            navio: "DORO"
+          })
+        }
+      );
+
+      const json = await res.json();
+      document.getElementById("resultado").textContent =
+        JSON.stringify(json, null, 2);
+    };
+  </script>
+</body>
+</html>
