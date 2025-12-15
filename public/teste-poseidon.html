@@ -1,36 +1,133 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Teste Poseidon</title>
+    <meta charset="UTF-8">
+    <title>Teste Poseidon</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        button {
+            padding: 10px 15px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+            font-size: 13px;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 6px 8px;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+    </style>
 </head>
 <body>
-  <h1>Teste Poseidon</h1>
-  <button id="btn">Buscar Pesagens</button>
 
-  <pre id="resultado"></pre>
+<h1>Teste Poseidon – Pesagens</h1>
 
-  <script>
-    document.getElementById("btn").onclick = async () => {
-      const res = await fetch(
-        "https://sistema-conferentes-node.onrender.com/poseidon/pesagens",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            data_inicio: "10/12/2025 09:15",
-            data_fim: "16/12/2025 09:15",
-            navio: "DORO"
-          })
+<button onclick="buscarPesagens()">Buscar Pesagens</button>
+
+<div id="resultado"></div>
+
+<script>
+async function buscarPesagens() {
+    const resultadoDiv = document.getElementById("resultado");
+    resultadoDiv.innerHTML = "Carregando...";
+
+    try {
+        const response = await fetch(
+            "https://sistema-conferentes-node.onrender.com/poseidon/pesagens",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    data_inicio: "10/12/2025 09:15",
+                    data_fim: "16/12/2025 09:15",
+                    navio: "DORO"
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (!data.ok) {
+            resultadoDiv.innerHTML = "Erro ao buscar dados.";
+            return;
         }
-      );
 
-      const json = await res.json();
-      document.getElementById("resultado").textContent =
-        JSON.stringify(json, null, 2);
-    };
-  </script>
+        renderTabela(data.registros);
+
+    } catch (err) {
+        resultadoDiv.innerHTML = "Erro de conexão.";
+        console.error(err);
+    }
+}
+
+function renderTabela(registros) {
+    if (!registros || registros.length === 0) {
+        document.getElementById("resultado").innerHTML = "Nenhum registro encontrado.";
+        return;
+    }
+
+    let html = `
+        <table>
+            <thead>
+                <tr>
+                    <th>Placa</th>
+                    <th>Entrada</th>
+                    <th>Saída</th>
+                    <th>Produto</th>
+                    <th>Peso Líquido</th>
+                    <th>Operação</th>
+                    <th>Navio</th>
+                    <th>Recinto</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    for (const r of registros) {
+        html += `
+            <tr>
+                <td>${r.placa}</td>
+                <td>${r.entrada}</td>
+                <td>${r.saida}</td>
+                <td>${r.produto}</td>
+                <td>${r.peso_liquido}</td>
+                <td>${r.operacao}</td>
+                <td>${r.navio}</td>
+                <td>${r.recinto}</td>
+            </tr>
+        `;
+    }
+
+    html += `
+            </tbody>
+        </table>
+    `;
+
+    document.getElementById("resultado").innerHTML = html;
+}
+</script>
+
 </body>
 </html>
