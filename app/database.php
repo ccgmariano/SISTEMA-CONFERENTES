@@ -13,12 +13,13 @@ class Database {
 
             // Garantir que o diretório existe
             if (!is_dir($dir)) {
-                mkdir($dir, 0755, true);
+                mkdir($dir, 0777, true);
             }
 
-            // IMPORTANTE:
-            // NÃO criar o arquivo manualmente
-            // SQLite cria o arquivo sozinho
+            // Garantir permissão de escrita
+            if (!is_writable($dir)) {
+                chmod($dir, 0777);
+            }
 
             self::$db = new PDO("sqlite:" . $path);
             self::$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
