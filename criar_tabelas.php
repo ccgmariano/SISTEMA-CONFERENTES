@@ -15,7 +15,6 @@ try {
             empresa TEXT NOT NULL,
             navio TEXT NOT NULL,
             produto TEXT NOT NULL,
-            recinto TEXT NOT NULL,
             tipo_operacao TEXT NOT NULL,
             criado_em TEXT
         );
@@ -39,13 +38,16 @@ try {
     echo "Tabela 'periodos' OK\n";
 
     // -----------------------------
-    // TABELA ASSOCIADOS
+    // TABELA ASSOCIADOS (base)
     // -----------------------------
     $db->exec("
         CREATE TABLE IF NOT EXISTS associados (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT NOT NULL,
-            codigo TEXT,
+            matricula TEXT NOT NULL
+            nome TEXT,
+            cpf TEXT,
+            senha TEXT,
+            celular TEXT,
             observacoes TEXT,
             ativo INTEGER DEFAULT 1,
             criado_em TEXT DEFAULT CURRENT_TIMESTAMP
@@ -53,8 +55,27 @@ try {
     ");
     echo "Tabela 'associados' OK\n";
 
-    echo "\nTodas as tabelas foram criadas/validadas com sucesso.";
+    // -----------------------------
+    // GARANTIR COLUNA CPF
+    // -----------------------------
+    try {
+        $db->exec("ALTER TABLE associados ADD COLUMN cpf TEXT");
+        echo "Coluna 'cpf' adicionada\n";
+    } catch (Exception $e) {
+        echo "Coluna 'cpf' já existe\n";
+    }
 
+    // -----------------------------
+    // GARANTIR COLUNA SENHA
+    // -----------------------------
+    try {
+        $db->exec("ALTER TABLE associados ADD COLUMN senha TEXT");
+        echo "Coluna 'senha' adicionada\n";
+    } catch (Exception $e) {
+        echo "Coluna 'senha' já existe\n";
+    }
+
+    echo "\nTodas as tabelas foram criadas/validadas com sucesso.";
     echo "</pre>";
 
 } catch (Exception $e) {
