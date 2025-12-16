@@ -10,6 +10,14 @@
   <label>Nome</label><br>
   <input name="nome" required value="<?= htmlspecialchars($assoc['nome'] ?? '') ?>"><br><br>
 
+  <label>CPF</label><br>
+<input name="cpf" value="<?= htmlspecialchars($assoc['cpf'] ?? '') ?>"><br><br>
+
+  <label>Senha</label><br>
+<input type="password" name="senha"><br><br>
+<small>(preencha apenas se quiser alterar)</small><br><br>
+
+
   <label>Código</label><br>
   <input name="codigo" value="<?= htmlspecialchars($assoc['codigo'] ?? '') ?>"><br><br>
 
