@@ -29,7 +29,7 @@ a {
     color: #fff;
     padding: 0.5rem 1.25rem;
 
-    /* ESSENCIAL para dropdown */
+    /* essencial p/ dropdown */
     overflow: visible;
 }
 
@@ -67,7 +67,7 @@ a {
 }
 
 /* =========================
-   DROPDOWN
+   DROPDOWN (corrigido)
 ========================= */
 
 .dropdown {
@@ -78,14 +78,22 @@ a {
     cursor: pointer;
 }
 
+/* zona invisível de tolerância */
+.dropdown::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 100%;
+    width: 100%;
+    height: 12px;
+}
+
 /* menu suspenso */
 .dropdown-content {
     display: none;
     position: absolute;
     top: 100%;
-    left: 0;
-
-    margin-top: 6px; /* ponte entre botão e menu */
+    left: -8px;               /* amplia área lateral */
 
     background: #ffffff;
     color: #222;
@@ -94,6 +102,8 @@ a {
     min-width: 220px;
     z-index: 1000;
     padding: 0.25rem 0;
+
+    margin-top: 0;            /* elimina gap */
 }
 
 .dropdown-content a {
