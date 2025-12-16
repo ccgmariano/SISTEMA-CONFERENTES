@@ -1,15 +1,25 @@
 <?php
+declare(strict_types=1);
+
 require_once __DIR__ . '/app/database.php';
 
-$db = Database::connect();
+try {
+    $db = Database::connect();
 
-$db->exec("
-    CREATE TABLE IF NOT EXISTS motivos_paralisacao (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nome TEXT NOT NULL,
-        ativo INTEGER DEFAULT 1,
-        criado_em TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-");
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS motivos_paralisacao (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT NOT NULL,
+            ativo INTEGER DEFAULT 1,
+            criado_em TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+    ");
 
-echo "Tabela motivos_paralisacao criada com sucesso";
+    header('Content-Type: text/plain; charset=utf-8');
+    echo "Tabela motivos_paralisacao criada com sucesso\n";
+
+} catch (Throwable $e) {
+    header('Content-Type: text/plain; charset=utf-8');
+    echo "Erro ao criar tabela motivos_paralisacao:\n";
+    echo $e->getMessage() . "\n";
+}
