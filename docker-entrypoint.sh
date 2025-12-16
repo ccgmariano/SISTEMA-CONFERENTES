@@ -1,7 +1,8 @@
 #!/bin/sh
 set -e
 
-# Garantir que o Apache (www-data) possa escrever no disk
+# Ajustar permissão do disk para o Apache
 chown -R www-data:www-data /var/data/db || true
 
-exec apache2-foreground
+# Executar o comando original
+exec "$@"
