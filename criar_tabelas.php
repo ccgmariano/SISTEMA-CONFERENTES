@@ -1,4 +1,4 @@
-<?php
+{<?php
 require_once __DIR__ . '/app/database.php';
 
 try {
@@ -45,4 +45,5 @@ try {
 } catch (Exception $e) {
     echo "<h2>Erro ao criar tabelas:</h2>";
     echo "<pre>" . $e->getMessage() . "</pre>";
+}
 }
