@@ -1,4 +1,4 @@
-{<?php
+<?php
 require_once __DIR__ . '/app/database.php';
 
 try {
@@ -38,6 +38,21 @@ try {
     ");
     echo "Tabela 'periodos' OK\n";
 
+    // -----------------------------
+    // TABELA ASSOCIADOS
+    // -----------------------------
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS associados (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT NOT NULL,
+            codigo TEXT,
+            observacoes TEXT,
+            ativo INTEGER DEFAULT 1,
+            criado_em TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+    ");
+    echo "Tabela 'associados' OK\n";
+
     echo "\nTodas as tabelas foram criadas/validadas com sucesso.";
 
     echo "</pre>";
@@ -45,5 +60,4 @@ try {
 } catch (Exception $e) {
     echo "<h2>Erro ao criar tabelas:</h2>";
     echo "<pre>" . $e->getMessage() . "</pre>";
-}
 }
