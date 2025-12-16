@@ -34,7 +34,14 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
                         <a href="/app/controllers/crud_controller.php?entidade=balancas">Balanças</a>
                         <a href="/app/controllers/crud_controller.php?entidade=operadores">Operadores Portuários</a>
                         <a href="/app/controllers/crud_controller.php?entidade=funcoes">Funções</a>
-                        <a href="/app/controllers/crud_controller.php?entidade=paralisacoes">Paralisações</a>
+
+                        <!-- PARALISAÇÕES -->
+                        <a href="/app/controllers/crud_controller.php?entidade=motivos_paralisacao">
+                            Motivos de Paralisação
+                        </a>
+                        <a href="/app/controllers/crud_controller.php?entidade=paralisacoes">
+                            Paralisações
+                        </a>
                     </div>
                 </div>
 
