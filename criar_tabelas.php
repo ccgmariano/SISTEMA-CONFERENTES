@@ -15,6 +15,7 @@ try {
             empresa TEXT NOT NULL,
             navio TEXT NOT NULL,
             produto TEXT NOT NULL,
+            recinto TEXT NOT NULL,
             tipo_operacao TEXT NOT NULL,
             criado_em TEXT
         );
@@ -43,11 +44,10 @@ try {
     $db->exec("
         CREATE TABLE IF NOT EXISTS associados (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            matricula TEXT NOT NULL
-            nome TEXT,
+            nome TEXT NOT NULL,
             cpf TEXT,
             senha TEXT,
-            celular TEXT,
+            codigo TEXT,
             observacoes TEXT,
             ativo INTEGER DEFAULT 1,
             criado_em TEXT DEFAULT CURRENT_TIMESTAMP
