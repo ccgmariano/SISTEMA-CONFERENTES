@@ -20,6 +20,10 @@ a {
     text-decoration: none;
 }
 
+/* =========================
+   TOPBAR / MENU
+========================= */
+
 .topbar {
     background: #222;
     color: #fff;
@@ -39,16 +43,63 @@ a {
     letter-spacing: 0.04em;
 }
 
-.topbar-nav a {
-    margin-left: 1rem;
+/* menu horizontal */
+.topbar-nav {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.topbar-nav a,
+.topbar-nav span {
     font-size: 0.9rem;
     color: #f6f6f6;
     opacity: 0.9;
+    cursor: pointer;
 }
 
-.topbar-nav a:hover {
+.topbar-nav a:hover,
+.topbar-nav span:hover {
     opacity: 1;
 }
+
+/* dropdown */
+.dropdown {
+    position: relative;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    top: 2rem;
+    left: 0;
+    background: #ffffff;
+    color: #222;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-soft);
+    min-width: 220px;
+    z-index: 1000;
+    padding: 0.25rem 0;
+}
+
+.dropdown-content a {
+    display: block;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.85rem;
+    color: #222;
+}
+
+.dropdown-content a:hover {
+    background: #f1f1f1;
+}
+
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+
+/* =========================
+   CONTEÚDO
+========================= */
 
 .page-content {
     max-width: 960px;
@@ -63,7 +114,9 @@ a {
     color: #777;
 }
 
-/* LOGIN */
+/* =========================
+   LOGIN
+========================= */
 
 .auth-wrapper {
     display: flex;
@@ -157,7 +210,9 @@ input[type="password"]:focus {
     color: #666;
 }
 
-/* DASHBOARD */
+/* =========================
+   DASHBOARD
+========================= */
 
 .dashboard h1 {
     margin-top: 0;
@@ -181,6 +236,10 @@ input[type="password"]:focus {
     color: #555;
 }
 
+/* =========================
+   RESPONSIVO
+========================= */
+
 @media (max-width: 600px) {
     .page-content {
         margin-top: 1.5rem;
@@ -189,4 +248,16 @@ input[type="password"]:focus {
     .auth-card {
         padding: 1.5rem;
     }
+
+    .topbar-inner {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .topbar-nav {
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
 }
+
