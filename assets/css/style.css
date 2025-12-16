@@ -28,6 +28,9 @@ a {
     background: #222;
     color: #fff;
     padding: 0.5rem 1.25rem;
+
+    /* ESSENCIAL para dropdown */
+    overflow: visible;
 }
 
 .topbar-inner {
@@ -63,16 +66,27 @@ a {
     opacity: 1;
 }
 
-/* dropdown */
+/* =========================
+   DROPDOWN
+========================= */
+
 .dropdown {
     position: relative;
 }
 
+.dropdown > span {
+    cursor: pointer;
+}
+
+/* menu suspenso */
 .dropdown-content {
     display: none;
     position: absolute;
-    top: 2rem;
+    top: 100%;
     left: 0;
+
+    margin-top: 6px; /* ponte entre botão e menu */
+
     background: #ffffff;
     color: #222;
     border-radius: var(--radius);
@@ -93,7 +107,9 @@ a {
     background: #f1f1f1;
 }
 
-.dropdown:hover .dropdown-content {
+/* mantém aberto ao descer o mouse */
+.dropdown:hover .dropdown-content,
+.dropdown-content:hover {
     display: block;
 }
 
@@ -260,4 +276,3 @@ input[type="password"]:focus {
         gap: 0.75rem;
     }
 }
-
