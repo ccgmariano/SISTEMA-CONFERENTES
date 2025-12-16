@@ -1,6 +1,5 @@
 FROM php:8.2-apache
 
-# Instalar dependências do SQLite
 RUN apt-get update \
     && apt-get install -y sqlite3 libsqlite3-dev \
     && docker-php-ext-install pdo pdo_sqlite \
@@ -10,5 +9,8 @@ RUN apt-get update \
 COPY . /var/www/html
 WORKDIR /var/www/html
 
-EXPOSE 80
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["apache2-foreground"]
