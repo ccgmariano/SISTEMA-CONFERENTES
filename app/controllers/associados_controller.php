@@ -7,10 +7,12 @@ $db = Database::connect();
 
 $acao = $_GET['acao'] ?? 'list';
 
+// =============================
 // LISTAGEM
+// =============================
 if ($acao === 'list') {
     $stmt = $db->query("
-        SELECT id, nome, codigo, ativo
+        SELECT id, nome, cpf, codigo, ativo
         FROM associados
         ORDER BY nome
     ");
@@ -19,7 +21,9 @@ if ($acao === 'list') {
     exit;
 }
 
+// =============================
 // FORMULÁRIO
+// =============================
 if ($acao === 'form') {
     $assoc = null;
 
@@ -33,42 +37,94 @@ if ($acao === 'form') {
     exit;
 }
 
-// SALVAR
+// =============================
+// SALVAR (INSERT / UPDATE)
+// =============================
 if ($acao === 'save') {
-    $id   = $_POST['id'] ?? null;
-    $nome = trim($_POST['nome']);
-    $codigo = trim($_POST['codigo'] ?? '');
-    $obs  = trim($_POST['observacoes'] ?? '');
 
-    if ($id) {
+    $id     = $_POST['id'] ?? null;
+    $nome   = trim($_POST['nome']);
+    $cpf    = trim($_POST['cpf'] ?? '');
+    $senha  = $_POST['senha'] ?? '';
+    $codigo = trim($_POST['codigo'] ?? '');
+    $obs    = trim($_POST['observacoes'] ?? '');
+
+    // INSERT
+    if (!$id) {
+
+        $senhaHash = $senha ? password_hash($senha, PASSWORD_DEFAULT) : null;
+
         $stmt = $db->prepare("
-            UPDATE associados
-               SET nome = :nome,
-                   codigo = :codigo,
-                   observacoes = :obs
-             WHERE id = :id
+            INSERT INTO associados (nome, cpf, senha, codigo, observacoes)
+            VALUES (:nome, :cpf, :senha, :codigo, :obs)
         ");
-        $stmt->execute(compact('nome','codigo','obs','id'));
-    } else {
-        $stmt = $db->prepare("
-            INSERT INTO associados (nome, codigo, observacoes)
-            VALUES (:nome, :codigo, :obs)
-        ");
-        $stmt->execute(compact('nome','codigo','obs'));
+        $stmt->execute([
+            'nome'   => $nome,
+            'cpf'    => $cpf,
+            'senha'  => $senhaHash,
+            'codigo' => $codigo,
+            'obs'    => $obs
+        ]);
+
+    } 
+    // UPDATE
+    else {
+
+        if ($senha) {
+            // Atualiza com senha
+            $stmt = $db->prepare("
+                UPDATE associados
+                   SET nome = :nome,
+                       cpf = :cpf,
+                       senha = :senha,
+                       codigo = :codigo,
+                       observacoes = :obs
+                 WHERE id = :id
+            ");
+            $stmt->execute([
+                'nome'   => $nome,
+                'cpf'    => $cpf,
+                'senha'  => password_hash($senha, PASSWORD_DEFAULT),
+                'codigo' => $codigo,
+                'obs'    => $obs,
+                'id'     => $id
+            ]);
+        } else {
+            // Atualiza sem mexer na senha
+            $stmt = $db->prepare("
+                UPDATE associados
+                   SET nome = :nome,
+                       cpf = :cpf,
+                       codigo = :codigo,
+                       observacoes = :obs
+                 WHERE id = :id
+            ");
+            $stmt->execute([
+                'nome'   => $nome,
+                'cpf'    => $cpf,
+                'codigo' => $codigo,
+                'obs'    => $obs,
+                'id'     => $id
+            ]);
+        }
     }
 
     header('Location: /app/controllers/associados_controller.php');
     exit;
 }
 
+// =============================
 // ATIVAR / DESATIVAR
+// =============================
 if ($acao === 'toggle') {
     $id = (int)$_GET['id'];
+
     $db->exec("
         UPDATE associados
            SET ativo = CASE ativo WHEN 1 THEN 0 ELSE 1 END
          WHERE id = $id
     ");
+
     header('Location: /app/controllers/associados_controller.php');
     exit;
 }
