@@ -20,7 +20,7 @@ if (!$op) {
     die('Operação não encontrada.');
 }
 
-// Busca períodos da operação
+// Busca períodos
 $stmt = $db->prepare('SELECT * FROM periodos WHERE operacao_id = ? ORDER BY id');
 $stmt->execute([$id]);
 $periodosExistentes = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -36,17 +36,19 @@ $associados = $stmt->fetchAll(PDO::FETCH_ASSOC);
 require_once __DIR__ . '/app/views/header.php';
 ?>
 
-<div class="container mt-4">
+<div class="container">
 
-    <h2>Operação Criada</h2>
+    <h2>Operação</h2>
 
-    <ul class="list-group mb-4">
-        <li class="list-group-item"><strong>Empresa:</strong> <?= htmlspecialchars($op['empresa']) ?></li>
-        <li class="list-group-item"><strong>Tipo de Operação:</strong> <?= htmlspecialchars($op['tipo_operacao']) ?></li>
-        <li class="list-group-item"><strong>Navio:</strong> <?= htmlspecialchars($op['navio']) ?></li>
-        <li class="list-group-item"><strong>Produto:</strong> <?= htmlspecialchars($op['produto']) ?></li>
-        <li class="list-group-item"><strong>Recinto:</strong> <?= htmlspecialchars($op['recinto']) ?></li>
+    <ul>
+        <li><strong>Empresa:</strong> <?= htmlspecialchars($op['empresa']) ?></li>
+        <li><strong>Tipo:</strong> <?= htmlspecialchars($op['tipo_operacao']) ?></li>
+        <li><strong>Navio:</strong> <?= htmlspecialchars($op['navio']) ?></li>
+        <li><strong>Produto:</strong> <?= htmlspecialchars($op['produto']) ?></li>
+        <li><strong>Recinto:</strong> <?= htmlspecialchars($op['recinto']) ?></li>
     </ul>
+
+    <hr>
 
     <h3>Criar novo período</h3>
 
@@ -54,76 +56,75 @@ require_once __DIR__ . '/app/views/header.php';
 
         <input type="hidden" name="operacao_id" value="<?= $op['id'] ?>">
 
-        <label class="form-label fw-bold">Data</label>
-        <input type="date" class="form-control mb-3" name="data" required>
+        <p>
+            <label><strong>Data:</strong></label><br>
+            <input type="date" name="data" required>
+        </p>
 
-        <label class="form-label fw-bold">Período</label>
-        <select name="periodo_escolhido" class="form-control mb-3" required>
-            <option value="07:00|12:59">Período 1 (07:00–12:59)</option>
-            <option value="13:00|18:59">Período 2 (13:00–18:59)</option>
-            <option value="19:00|00:59">Período 3 (19:00–00:59)</option>
-            <option value="01:00|06:59">Período 4 (01:00–06:59)</option>
-        </select>
+        <p>
+            <label><strong>Período:</strong></label><br>
+            <select name="periodo_escolhido" required>
+                <option value="07:00|12:59">Período 1 — 07:00 às 12:59</option>
+                <option value="13:00|18:59">Período 2 — 13:00 às 18:59</option>
+                <option value="19:00|00:59">Período 3 — 19:00 às 00:59</option>
+                <option value="01:00|06:59">Período 4 — 01:00 às 06:59</option>
+            </select>
+        </p>
 
         <hr>
 
-        <h4>Funções e Conferentes</h4>
+        <h3>Funções e Conferentes</h3>
+        <p><em>Marque as funções do período e escolha os conferentes para cada uma.</em></p>
 
         <?php foreach ($funcoes as $funcao): ?>
-            <div style="margin-bottom:15px; padding:10px; border:1px solid #ddd;">
-                <label class="fw-bold">
-                    <input type="checkbox" name="funcoes[]" value="<?= $funcao['id'] ?>">
-                    <?= htmlspecialchars($funcao['nome']) ?>
-                </label>
+            <fieldset style="margin-bottom:15px; padding:10px; border:1px solid #999;">
+                <legend>
+                    <label>
+                        <input type="checkbox" name="funcoes[]" value="<?= $funcao['id'] ?>">
+                        <strong><?= htmlspecialchars($funcao['nome']) ?></strong>
+                    </label>
+                </legend>
 
-                <br>
+                <p>Conferentes desta função:</p>
 
-                <small>Conferentes:</small>
-                <select name="conferentes[<?= $funcao['id'] ?>][]" multiple size="4" class="form-control">
+                <select name="conferentes[<?= $funcao['id'] ?>][]" multiple size="5">
                     <?php foreach ($associados as $a): ?>
                         <option value="<?= $a['id'] ?>">
                             <?= htmlspecialchars($a['nome']) ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
-            </div>
+            </fieldset>
         <?php endforeach; ?>
 
-        <button type="submit" class="btn btn-primary mt-3">
-            Criar Período
-        </button>
+        <p>
+            <button type="submit">Criar Período</button>
+        </p>
 
     </form>
 
-    <hr class="my-4">
+    <hr>
 
-    <h4>Períodos existentes</h4>
+    <h3>Períodos existentes</h3>
 
     <?php if (empty($periodosExistentes)): ?>
-
-        <p>Nenhum período criado ainda.</p>
-
+        <p>Nenhum período criado.</p>
     <?php else: ?>
-
-        <ul class="list-group">
+        <ul>
             <?php foreach ($periodosExistentes as $per): ?>
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <span>
-                        <strong><?= htmlspecialchars($per['data']) ?></strong>
-                        — <?= htmlspecialchars($per['inicio']) ?> → <?= htmlspecialchars($per['fim']) ?>
-                    </span>
-
-                    <a href="/periodo_view.php?id=<?= (int)$per['id'] ?>"
-                       class="btn btn-sm btn-outline-primary">
-                        Abrir período
-                    </a>
+                <li>
+                    <?= htmlspecialchars($per['data']) ?>
+                    — <?= htmlspecialchars($per['inicio']) ?> → <?= htmlspecialchars($per['fim']) ?>
+                    |
+                    <a href="/periodo_view.php?id=<?= (int)$per['id'] ?>">Abrir</a>
                 </li>
             <?php endforeach; ?>
         </ul>
-
     <?php endif; ?>
 
-    <a href="/dashboard.php" class="btn btn-secondary mt-4">Voltar ao Dashboard</a>
+    <p>
+        <a href="/dashboard.php">Voltar ao Dashboard</a>
+    </p>
 
 </div>
 
