@@ -16,7 +16,7 @@ if ($periodoId <= 0) {
 }
 
 // ======================================================
-// 2. BUSCAR PERÍODO + OPERAÇÃO NO BANCO
+// 2. BUSCAR PERÍODO + OPERAÇÃO
 // ======================================================
 $db = Database::connect();
 
@@ -89,15 +89,17 @@ if (!$data || !isset($data['ok']) || !$data['ok']) {
 }
 
 // ======================================================
-// 5. EXIBIR RESULTADO EM TABELA
+// 5. EXIBIR RESULTADO
 // ======================================================
 echo "<h3>Pesagens do período</h3>";
 echo "<p><strong>Navio:</strong> {$navio}</p>";
 echo "<p><strong>Período:</strong> {$dataInicio} → {$dataFim}</p>";
 echo "<p><strong>Total:</strong> {$data['total']} registros</p>";
 
-echo "<table border='1' cellpadding='6' cellspacing='0'>";
+echo "<table border='1' cellpadding='6' cellspacing='0' width='100%'>";
+
 echo "<tr>
+        <th style='width:60px'>Ação</th>
         <th>Ticket</th>
         <th>Placa</th>
         <th>Entrada</th>
@@ -106,13 +108,26 @@ echo "<tr>
       </tr>";
 
 foreach ($data['registros'] as $r) {
+
+    $ticket = (int) $r['ticket_id'];
+
     echo "<tr>
-            <td>{$r['ticket_id']}</td>
-            <td>{$r['placa']}</td>
-            <td>{$r['entrada']}</td>
-            <td>{$r['saida']}</td>
-            <td>{$r['peso_liquido']}</td>
-          </tr>";
+
+        <td style='text-align:center'>
+            <a href='/pesagem_conferir.php?periodo_id={$periodoId}&ticket={$ticket}'
+               title='Conferir pesagem'
+               style='font-size:18px; text-decoration:none'>
+               🔍
+            </a>
+        </td>
+
+        <td>{$ticket}</td>
+        <td>{$r['placa']}</td>
+        <td>{$r['entrada']}</td>
+        <td>{$r['saida']}</td>
+        <td>{$r['peso_liquido']}</td>
+
+    </tr>";
 }
 
 echo "</table>";
