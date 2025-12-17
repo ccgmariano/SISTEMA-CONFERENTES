@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS periodo_funcoes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    periodo_id INTEGER NOT NULL,
+    funcao_id INTEGER NOT NULL
+);
