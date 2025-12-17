@@ -73,6 +73,16 @@ require_once __DIR__ . '/app/views/header.php';
 
     <hr>
 
+    <!-- CONFIGURAÇÕES DE LANÇAMENTO -->
+    <h4>Configurações de Lançamento</h4>
+
+    <a href="/config_lancamentos.php?periodo_id=<?= (int)$id ?>"
+       class="btn btn-outline-secondary mb-3">
+        Configurar Lançamentos do Período
+    </a>
+
+    <hr>
+
     <!-- CAPTURA DE PESAGENS -->
     <h4>Captura de Pesagens</h4>
 
@@ -113,7 +123,6 @@ require_once __DIR__ . '/app/views/header.php';
 
     <div id="pesagensConferidas">
         <?php
-            // garante o periodo_id para o controller
             $_GET['periodo_id'] = $id;
             include $_SERVER['DOCUMENT_ROOT'] . '/app/controllers/pesagens_list.php';
         ?>
