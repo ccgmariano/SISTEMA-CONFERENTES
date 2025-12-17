@@ -108,6 +108,19 @@ require_once __DIR__ . '/app/views/header.php';
 
     <hr>
 
+    <!-- PESAGENS CONFERIDAS -->
+    <h4>Pesagens Conferidas</h4>
+
+    <div id="pesagensConferidas">
+        <?php
+            // garante o periodo_id para o controller
+            $_GET['periodo_id'] = $id;
+            include $_SERVER['DOCUMENT_ROOT'] . '/app/controllers/pesagens_list.php';
+        ?>
+    </div>
+
+    <hr>
+
     <!-- FUNÇÕES E CONFERENTES -->
     <h3>Funções escaladas</h3>
 
