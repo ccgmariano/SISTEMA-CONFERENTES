@@ -4,31 +4,18 @@ require_once __DIR__ . '/app/database.php';
 $db = Database::connect();
 
 $db->exec("
-    CREATE TABLE IF NOT EXISTS pesagens (
+    CREATE TABLE IF NOT EXISTS config_lancamentos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-        periodo_id INTEGER NOT NULL,
+        periodo_id INTEGER NOT NULL UNIQUE,
 
-        ticket INTEGER NOT NULL,
-        placa TEXT,
-        empresa TEXT,
-
-        data_hora TEXT NOT NULL,
-        peso_liquido REAL NOT NULL,
-
-        carga TEXT,
-        operacao TEXT,
-
-        terno INTEGER,
-        equipamento TEXT,
         porao INTEGER,
         deck TEXT,
-        origem_destino TEXT,
+        equipamento_id INTEGER,
+        origem_destino_id INTEGER,
 
-        criado_em TEXT DEFAULT (datetime('now')),
-
-        UNIQUE (periodo_id, ticket)
+        criado_em TEXT DEFAULT (datetime('now'))
     )
 ");
 
-echo "Tabela pesagens criada/confirmada com sucesso.";
+echo 'Tabela config_lancamentos criada/confirmada com sucesso.';
