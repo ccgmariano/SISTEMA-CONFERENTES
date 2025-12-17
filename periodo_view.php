@@ -57,7 +57,7 @@ require_once __DIR__ . '/app/views/header.php';
     <p>
         <a href="/pesagens_view.php?periodo_id=<?= (int)$id ?>"
            class="btn btn-primary">
-           Consultar Pesagens
+           capturar Pesagens
         </a>
     </p>
 
