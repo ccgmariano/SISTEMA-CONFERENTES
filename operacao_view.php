@@ -20,17 +20,17 @@ if (!$op) {
     die('Operação não encontrada.');
 }
 
-// Busca períodos
+// Busca períodos da operação
 $stmt = $db->prepare('SELECT * FROM periodos WHERE operacao_id = ? ORDER BY id');
 $stmt->execute([$id]);
 $periodosExistentes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Busca funções
-$stmt = $db->query('SELECT id, nome FROM funcoes WHERE ativo = 1 ORDER BY nome');
+// Busca funções (SEM filtro ativo)
+$stmt = $db->query('SELECT id, nome FROM funcoes ORDER BY nome');
 $funcoes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Busca associados
-$stmt = $db->query('SELECT id, nome FROM associados WHERE ativo = 1 ORDER BY nome');
+// Busca associados (SEM filtro ativo)
+$stmt = $db->query('SELECT id, nome FROM associados ORDER BY nome');
 $associados = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 require_once __DIR__ . '/app/views/header.php';
@@ -54,7 +54,7 @@ require_once __DIR__ . '/app/views/header.php';
 
     <form method="POST" action="/app/controllers/periodo_controller.php">
 
-        <input type="hidden" name="operacao_id" value="<?= $op['id'] ?>">
+        <input type="hidden" name="operacao_id" value="<?= (int)$op['id'] ?>">
 
         <p>
             <label><strong>Data:</strong></label><br>
@@ -74,22 +74,22 @@ require_once __DIR__ . '/app/views/header.php';
         <hr>
 
         <h3>Funções e Conferentes</h3>
-        <p><em>Marque as funções do período e escolha os conferentes para cada uma.</em></p>
+        <p><em>Marque as funções do período e selecione os conferentes de cada função.</em></p>
 
         <?php foreach ($funcoes as $funcao): ?>
             <fieldset style="margin-bottom:15px; padding:10px; border:1px solid #999;">
                 <legend>
                     <label>
-                        <input type="checkbox" name="funcoes[]" value="<?= $funcao['id'] ?>">
+                        <input type="checkbox" name="funcoes[]" value="<?= (int)$funcao['id'] ?>">
                         <strong><?= htmlspecialchars($funcao['nome']) ?></strong>
                     </label>
                 </legend>
 
                 <p>Conferentes desta função:</p>
 
-                <select name="conferentes[<?= $funcao['id'] ?>][]" multiple size="5">
+                <select name="conferentes[<?= (int)$funcao['id'] ?>][]" multiple size="5">
                     <?php foreach ($associados as $a): ?>
-                        <option value="<?= $a['id'] ?>">
+                        <option value="<?= (int)$a['id'] ?>">
                             <?= htmlspecialchars($a['nome']) ?>
                         </option>
                     <?php endforeach; ?>
