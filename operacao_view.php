@@ -25,13 +25,11 @@ $stmt = $db->prepare('SELECT * FROM periodos WHERE operacao_id = ? ORDER BY id')
 $stmt->execute([$id]);
 $periodosExistentes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Busca funções (sem filtro ativo)
-$stmt = $db->query('SELECT id, nome FROM funcoes ORDER BY nome');
-$funcoes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Busca funções
+$funcoes = $db->query('SELECT id, nome FROM funcoes ORDER BY nome')->fetchAll(PDO::FETCH_ASSOC);
 
-// Busca associados (sem filtro ativo)
-$stmt = $db->query('SELECT id, nome FROM associados ORDER BY nome');
-$associados = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Busca associados
+$associados = $db->query('SELECT id, nome FROM associados ORDER BY nome')->fetchAll(PDO::FETCH_ASSOC);
 
 require_once __DIR__ . '/app/views/header.php';
 ?>
@@ -74,7 +72,6 @@ require_once __DIR__ . '/app/views/header.php';
         <hr>
 
         <h3>Funções e Conferentes</h3>
-        <p><em>Marque as funções do período e selecione os conferentes de cada função.</em></p>
 
         <?php foreach ($funcoes as $funcao): ?>
             <fieldset style="margin-bottom:15px; padding:10px; border:1px solid #999;">
@@ -108,8 +105,11 @@ require_once __DIR__ . '/app/views/header.php';
     <h3>Períodos existentes</h3>
 
     <?php if (empty($periodosExistentes)): ?>
+
         <p>Nenhum período criado.</p>
+
     <?php else: ?>
+
         <ul>
             <?php foreach ($periodosExistentes as $per): ?>
                 <li>
@@ -119,9 +119,15 @@ require_once __DIR__ . '/app/views/header.php';
                     <a href="/periodo_view.php?id=<?= (int)$per['id'] ?>">Abrir</a>
                     |
                     <a href="/periodo_edit.php?id=<?= (int)$per['id'] ?>">Editar</a>
+                    |
+                    <a href="/periodo_delete.php?id=<?= (int)$per['id'] ?>"
+                       onclick="return confirm('Confirma excluir este período?');">
+                       Excluir
+                    </a>
                 </li>
             <?php endforeach; ?>
         </ul>
+
     <?php endif; ?>
 
     <p>
