@@ -5,15 +5,26 @@ require_login();
 require_once __DIR__ . '/app/database.php';
 $db = Database::connect();
 
-// ID do período
+// ======================================================
+// 1. RECEBE ID DO PERÍODO
+// ======================================================
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($id <= 0) {
     die('Período inválido.');
 }
 
-// Buscar período
+// ======================================================
+// 2. BUSCA PERÍODO + OPERAÇÃO
+// ======================================================
 $stmt = $db->prepare("
-    SELECT p.*, o.id AS operacao_id
+    SELECT 
+        p.*,
+        o.id   AS operacao_id,
+        o.empresa,
+        o.navio,
+        o.tipo_operacao,
+        o.produto,
+        o.recinto
     FROM periodos p
     JOIN operacoes o ON o.id = p.operacao_id
     WHERE p.id = ?
@@ -25,11 +36,12 @@ if (!$periodo) {
     die('Período não encontrado.');
 }
 
-// Buscar funções do período
+// ======================================================
+// 3. BUSCA FUNÇÕES DO PERÍODO
+// ======================================================
 $stmt = $db->prepare("
     SELECT
         pf.id AS periodo_funcao_id,
-        f.id  AS funcao_id,
         f.nome AS funcao_nome
     FROM periodo_funcoes pf
     JOIN funcoes f ON f.id = pf.funcao_id
@@ -42,27 +54,61 @@ $funcoesPeriodo = $stmt->fetchAll(PDO::FETCH_ASSOC);
 require_once __DIR__ . '/app/views/header.php';
 ?>
 
-<div class="container">
+<div class="container mt-4">
 
     <h2>Período</h2>
 
-    <ul>
-        <li><strong>Data:</strong> <?= htmlspecialchars($periodo['data']) ?></li>
-        <li><strong>Horário:</strong> <?= htmlspecialchars($periodo['inicio']) ?> → <?= htmlspecialchars($periodo['fim']) ?></li>
+    <ul class="list-group mb-4">
+        <li class="list-group-item"><strong>Data:</strong> <?= htmlspecialchars($periodo['data']) ?></li>
+        <li class="list-group-item">
+            <strong>Horário:</strong>
+            <?= htmlspecialchars($periodo['inicio']) ?> → <?= htmlspecialchars($periodo['fim']) ?>
+        </li>
+        <li class="list-group-item"><strong>Empresa:</strong> <?= htmlspecialchars($periodo['empresa']) ?></li>
+        <li class="list-group-item"><strong>Navio:</strong> <?= htmlspecialchars($periodo['navio']) ?></li>
+        <li class="list-group-item"><strong>Tipo:</strong> <?= htmlspecialchars($periodo['tipo_operacao']) ?></li>
+        <li class="list-group-item"><strong>Produto:</strong> <?= htmlspecialchars($periodo['produto']) ?></li>
+        <li class="list-group-item"><strong>Recinto:</strong> <?= htmlspecialchars($periodo['recinto']) ?></li>
     </ul>
 
     <hr>
 
-    <!-- AÇÕES DO PERÍODO -->
-    <p>
-        <a href="/pesagens_view.php?periodo_id=<?= (int)$id ?>"
-           class="btn btn-primary">
-           capturar Pesagens
-        </a>
-    </p>
+    <!-- CAPTURA DE PESAGENS -->
+    <h4>Captura de Pesagens</h4>
+
+    <button id="btnCapturar" class="btn btn-success w-100 mb-3">
+        Capturar Pesagens do Período
+    </button>
+
+    <div id="resultadoCaptura"></div>
+
+    <script>
+        document.getElementById('btnCapturar').addEventListener('click', function () {
+            const btn = this;
+            const divResultado = document.getElementById('resultadoCaptura');
+
+            btn.disabled = true;
+            btn.innerText = "Consultando Poseidon...";
+
+            fetch("/app/controllers/captura_controller.php?periodo_id=<?= (int)$id ?>")
+                .then(resp => resp.text())
+                .then(html => {
+                    divResultado.innerHTML = html;
+                })
+                .catch(() => {
+                    divResultado.innerHTML =
+                        "<div class='alert alert-danger'>Erro ao consultar pesagens.</div>";
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.innerText = "Capturar Pesagens do Período";
+                });
+        });
+    </script>
 
     <hr>
 
+    <!-- FUNÇÕES E CONFERENTES -->
     <h3>Funções escaladas</h3>
 
     <?php if (empty($funcoesPeriodo)): ?>
@@ -104,11 +150,10 @@ require_once __DIR__ . '/app/views/header.php';
 
     <?php endif; ?>
 
-    <p>
-        <a href="/operacao_view.php?id=<?= (int)$periodo['operacao_id'] ?>">
-            Voltar à Operação
-        </a>
-    </p>
+    <a href="/operacao_view.php?id=<?= (int)$periodo['operacao_id'] ?>"
+       class="btn btn-secondary mt-4">
+        Voltar à Operação
+    </a>
 
 </div>
 
