@@ -25,11 +25,11 @@ $stmt = $db->prepare('SELECT * FROM periodos WHERE operacao_id = ? ORDER BY id')
 $stmt->execute([$id]);
 $periodosExistentes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Busca funções (SEM filtro ativo)
+// Busca funções (sem filtro ativo)
 $stmt = $db->query('SELECT id, nome FROM funcoes ORDER BY nome');
 $funcoes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Busca associados (SEM filtro ativo)
+// Busca associados (sem filtro ativo)
 $stmt = $db->query('SELECT id, nome FROM associados ORDER BY nome');
 $associados = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -117,6 +117,8 @@ require_once __DIR__ . '/app/views/header.php';
                     — <?= htmlspecialchars($per['inicio']) ?> → <?= htmlspecialchars($per['fim']) ?>
                     |
                     <a href="/periodo_view.php?id=<?= (int)$per['id'] ?>">Abrir</a>
+                    |
+                    <a href="/periodo_edit.php?id=<?= (int)$per['id'] ?>">Editar</a>
                 </li>
             <?php endforeach; ?>
         </ul>
