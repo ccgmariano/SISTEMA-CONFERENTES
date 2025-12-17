@@ -31,28 +31,50 @@ if (empty($pesagens)) {
     echo "<p><em>Nenhuma pesagem conferida ainda.</em></p>";
     exit;
 }
+?>
 
-echo "<table border='1' cellpadding='6' cellspacing='0' width='100%'>";
-echo "<tr>
-        <th>Ticket</th>
-        <th>Placa</th>
-        <th>Peso Líquido</th>
-        <th>Data/Hora</th>
-        <th>Porão</th>
-        <th>Deck</th>
-        <th>Equipamento</th>
-      </tr>";
+<form id="formPesagens">
 
-foreach ($pesagens as $p) {
-    echo "<tr>
-            <td>{$p['ticket']}</td>
-            <td>{$p['placa']}</td>
-            <td>{$p['peso_liquido']}</td>
-            <td>{$p['data_hora']}</td>
-            <td>{$p['porao']}</td>
-            <td>{$p['deck']}</td>
-            <td>{$p['equipamento']}</td>
-          </tr>";
-}
+<table border="1" cellpadding="6" cellspacing="0" width="100%">
+    <thead>
+        <tr>
+            <th>
+                <input type="checkbox" id="checkAll">
+            </th>
+            <th>Ticket</th>
+            <th>Placa</th>
+            <th>Peso Líquido</th>
+            <th>Data/Hora</th>
+            <th>Porão</th>
+            <th>Deck</th>
+            <th>Equipamento</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php foreach ($pesagens as $p): ?>
+            <tr>
+                <td>
+                    <input type="checkbox"
+                           name="pesagem_ids[]"
+                           value="<?= (int)$p['id'] ?>">
+                </td>
+                <td><?= htmlspecialchars($p['ticket']) ?></td>
+                <td><?= htmlspecialchars($p['placa']) ?></td>
+                <td><?= htmlspecialchars($p['peso_liquido']) ?></td>
+                <td><?= htmlspecialchars($p['data_hora']) ?></td>
+                <td><?= htmlspecialchars($p['porao']) ?></td>
+                <td><?= htmlspecialchars($p['deck']) ?></td>
+                <td><?= htmlspecialchars($p['equipamento']) ?></td>
+            </tr>
+        <?php endforeach; ?>
+    </tbody>
+</table>
 
-echo "</table>";
+</form>
+
+<script>
+document.getElementById('checkAll').addEventListener('change', function () {
+    const checks = document.querySelectorAll('input[name="pesagem_ids[]"]');
+    checks.forEach(c => c.checked = this.checked);
+});
+</script>
