@@ -3,19 +3,22 @@ require_once __DIR__ . '/app/database.php';
 
 $db = Database::connect();
 
+$sql = "
+CREATE TABLE IF NOT EXISTS origem_destino (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT NOT NULL
+);
+";
+
+$db->exec($sql);
+
+// dados iniciais
 $db->exec("
-    CREATE TABLE IF NOT EXISTS config_lancamentos (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-        periodo_id INTEGER NOT NULL UNIQUE,
-
-        porao INTEGER,
-        deck TEXT,
-        equipamento_id INTEGER,
-        origem_destino_id INTEGER,
-
-        criado_em TEXT DEFAULT (datetime('now'))
-    )
+INSERT INTO origem_destino (nome) VALUES
+('INTERNO'),
+('EXTERNO'),
+('MAXIPORT'),
+('RETROÁREA');
 ");
 
-echo 'Tabela config_lancamentos criada/confirmada com sucesso.';
+echo "Tabela origem_destino criada com sucesso.";
