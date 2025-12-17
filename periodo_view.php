@@ -53,6 +53,16 @@ require_once __DIR__ . '/app/views/header.php';
 
     <hr>
 
+    <!-- AÇÕES DO PERÍODO -->
+    <p>
+        <a href="/pesagens_view.php?periodo_id=<?= (int)$id ?>"
+           class="btn btn-primary">
+           Consultar Pesagens
+        </a>
+    </p>
+
+    <hr>
+
     <h3>Funções escaladas</h3>
 
     <?php if (empty($funcoesPeriodo)): ?>
@@ -67,7 +77,6 @@ require_once __DIR__ . '/app/views/header.php';
                 <legend><strong><?= htmlspecialchars($f['funcao_nome']) ?></strong></legend>
 
                 <?php
-                // Buscar conferentes da função neste período
                 $stmt = $db->prepare("
                     SELECT a.nome
                     FROM periodo_conferentes pc
