@@ -5,96 +5,101 @@ require_login();
 require_once __DIR__ . '/app/database.php';
 $db = Database::connect();
 
-// ======================================================
-// 1. RECEBE O ID DO PERÍODO
-// ======================================================
-$periodoId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-
-if ($periodoId <= 0) {
-    die("Período inválido.");
+// ID do período
+$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+if ($id <= 0) {
+    die('Período inválido.');
 }
 
-// ======================================================
-// 2. BUSCA O PERÍODO
-// ======================================================
-$stmt = $db->prepare("SELECT * FROM periodos WHERE id = ?");
-$stmt->execute([$periodoId]);
+// Buscar período
+$stmt = $db->prepare("
+    SELECT p.*, o.id AS operacao_id
+    FROM periodos p
+    JOIN operacoes o ON o.id = p.operacao_id
+    WHERE p.id = ?
+");
+$stmt->execute([$id]);
 $periodo = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$periodo) {
-    die("Período não encontrado.");
+    die('Período não encontrado.');
 }
 
-// ======================================================
-// 3. BUSCA A OPERAÇÃO
-// ======================================================
-$stmt = $db->prepare("SELECT * FROM operacoes WHERE id = ?");
-$stmt->execute([$periodo['operacao_id']]);
-$operacao = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$operacao) {
-    die("Operação vinculada ao período não encontrada.");
-}
+// Buscar funções do período
+$stmt = $db->prepare("
+    SELECT
+        pf.id AS periodo_funcao_id,
+        f.id  AS funcao_id,
+        f.nome AS funcao_nome
+    FROM periodo_funcoes pf
+    JOIN funcoes f ON f.id = pf.funcao_id
+    WHERE pf.periodo_id = ?
+    ORDER BY f.nome
+");
+$stmt->execute([$id]);
+$funcoesPeriodo = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 require_once __DIR__ . '/app/views/header.php';
 ?>
 
-<div class="container mt-4">
+<div class="container">
 
-    <h2>Período da Operação</h2>
+    <h2>Período</h2>
 
-    <ul class="list-group mb-4">
-        <li class="list-group-item"><strong>Data:</strong> <?= htmlspecialchars($periodo['data']) ?></li>
-        <li class="list-group-item"><strong>Início:</strong> <?= htmlspecialchars($periodo['inicio']) ?></li>
-        <li class="list-group-item"><strong>Fim:</strong> <?= htmlspecialchars($periodo['fim']) ?></li>
-        <li class="list-group-item"><strong>Criado em:</strong> <?= htmlspecialchars($periodo['criado_em']) ?></li>
-    </ul>
-
-    <h4>Dados da Operação</h4>
-    <ul class="list-group mb-4">
-        <li class="list-group-item"><strong>Empresa:</strong> <?= htmlspecialchars($operacao['empresa']) ?></li>
-        <li class="list-group-item"><strong>Navio:</strong> <?= htmlspecialchars($operacao['navio']) ?></li>
-        <li class="list-group-item"><strong>Tipo:</strong> <?= htmlspecialchars($operacao['tipo_operacao']) ?></li>
-        <li class="list-group-item"><strong>Produto:</strong> <?= htmlspecialchars($operacao['produto']) ?></li>
-        <li class="list-group-item"><strong>Recinto:</strong> <?= htmlspecialchars($operacao['recinto']) ?></li>
+    <ul>
+        <li><strong>Data:</strong> <?= htmlspecialchars($periodo['data']) ?></li>
+        <li><strong>Horário:</strong> <?= htmlspecialchars($periodo['inicio']) ?> → <?= htmlspecialchars($periodo['fim']) ?></li>
     </ul>
 
     <hr>
 
-    <h4>Captura de Pesagens</h4>
+    <h3>Funções escaladas</h3>
 
-    <button id="btnCapturar" class="btn btn-success w-100 mb-3">
-        Capturar Pesagens do Período
-    </button>
+    <?php if (empty($funcoesPeriodo)): ?>
 
-    <div id="resultadoCaptura" class="mt-3"></div>
+        <p><em>Nenhuma função foi escalada para este período.</em></p>
 
-    <script>
-        document.getElementById('btnCapturar').addEventListener('click', function () {
-            const btn = this;
-            const divResultado = document.getElementById('resultadoCaptura');
+    <?php else: ?>
 
-            btn.disabled = true;
-            btn.innerText = "Consultando Poseidon...";
+        <?php foreach ($funcoesPeriodo as $f): ?>
 
-            fetch("/app/controllers/captura_controller.php?periodo_id=<?= $periodoId ?>")
-                .then(r => r.text())
-                .then(html => {
-                    divResultado.innerHTML = html;
-                })
-                .catch(err => {
-                    divResultado.innerHTML = "<div class='alert alert-danger'>Erro na captura.</div>";
-                })
-                .finally(() => {
-                    btn.disabled = false;
-                    btn.innerText = "Capturar Pesagens do Período";
-                });
-        });
-    </script>
+            <fieldset style="margin-bottom:15px; padding:10px; border:1px solid #999;">
+                <legend><strong><?= htmlspecialchars($f['funcao_nome']) ?></strong></legend>
 
-    <a href="/operacao_view.php?id=<?= $operacao['id'] ?>" class="btn btn-secondary mt-4">
-        Voltar para Operação
-    </a>
+                <?php
+                // Buscar conferentes da função neste período
+                $stmt = $db->prepare("
+                    SELECT a.nome
+                    FROM periodo_conferentes pc
+                    JOIN associados a ON a.id = pc.associado_id
+                    WHERE pc.periodo_funcao_id = ?
+                    ORDER BY a.nome
+                ");
+                $stmt->execute([$f['periodo_funcao_id']]);
+                $conferentes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                ?>
+
+                <?php if (empty($conferentes)): ?>
+                    <p>Nenhum conferente atribuído.</p>
+                <?php else: ?>
+                    <ul>
+                        <?php foreach ($conferentes as $c): ?>
+                            <li><?= htmlspecialchars($c['nome']) ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
+
+            </fieldset>
+
+        <?php endforeach; ?>
+
+    <?php endif; ?>
+
+    <p>
+        <a href="/operacao_view.php?id=<?= (int)$periodo['operacao_id'] ?>">
+            Voltar à Operação
+        </a>
+    </p>
 
 </div>
 
