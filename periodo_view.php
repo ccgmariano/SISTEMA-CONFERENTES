@@ -39,8 +39,18 @@ if (!$periodo) {
 // ======================================================
 // 3. LISTAS PARA CONFIGURAÇÕES DE LANÇAMENTO
 // ======================================================
-$equipamentos = $db->query("SELECT id, nome FROM equipamentos WHERE ativo = 1 ORDER BY nome")->fetchAll();
-$origens      = $db->query("SELECT id, nome FROM origem_destino ORDER BY nome")->fetchAll();
+$equipamentos = $db->query("
+    SELECT id, nome 
+    FROM equipamentos 
+    WHERE ativo = 1 
+    ORDER BY nome
+")->fetchAll();
+
+$origens = $db->query("
+    SELECT id, nome 
+    FROM origem_destino 
+    ORDER BY nome
+")->fetchAll();
 
 require_once __DIR__ . '/app/views/header.php';
 ?>
@@ -64,9 +74,7 @@ require_once __DIR__ . '/app/views/header.php';
 
     <hr>
 
-    <!-- ====================================================== -->
     <!-- CONFIGURAÇÕES DE LANÇAMENTO (ESTADO DE TELA) -->
-    <!-- ====================================================== -->
     <h4>Configurações de Lançamento</h4>
 
     <div class="row mb-3">
@@ -122,9 +130,7 @@ require_once __DIR__ . '/app/views/header.php';
 
     <hr>
 
-    <!-- ====================================================== -->
     <!-- CAPTURA DE PESAGENS -->
-    <!-- ====================================================== -->
     <h4>Captura de Pesagens</h4>
 
     <button id="btnCapturar" class="btn btn-success mb-3">
@@ -135,7 +141,7 @@ require_once __DIR__ . '/app/views/header.php';
 
     <script>
         document.getElementById('btnCapturar').addEventListener('click', function () {
-            fetch("/app/controllers/captura_controller.php?periodo_id=<?= $id ?>")
+            fetch("/app/controllers/captura_controller.php?periodo_id=<?= (int)$id ?>")
                 .then(r => r.text())
                 .then(html => document.getElementById('resultadoCaptura').innerHTML = html);
         });
@@ -143,9 +149,7 @@ require_once __DIR__ . '/app/views/header.php';
 
     <hr>
 
-    <!-- ====================================================== -->
     <!-- PESAGENS CONFERIDAS -->
-    <!-- ====================================================== -->
     <h4>Pesagens Conferidas</h4>
 
     <div id="pesagensConferidas">
@@ -161,5 +165,51 @@ require_once __DIR__ . '/app/views/header.php';
     </a>
 
 </div>
+
+<!-- ====================================================== -->
+<!-- MODAL DA LUPA (BASE – SEM LÓGICA AINDA) -->
+<!-- ====================================================== -->
+<div id="modalPesagem"
+     style="display:none;
+            position:fixed;
+            top:0; left:0;
+            width:100%; height:100%;
+            background:rgba(0,0,0,0.6);
+            z-index:9999;">
+
+    <div style="
+        background:#fff;
+        width:600px;
+        margin:60px auto;
+        padding:20px;
+        position:relative;
+    ">
+
+        <button onclick="fecharModal()"
+                style="position:absolute; top:10px; right:10px;">
+            ✖
+        </button>
+
+        <h3>Conferência da Pesagem</h3>
+
+        <div id="conteudoModal">
+            <!-- conteúdo virá no próximo passo -->
+            <p><em>Modal aberto com sucesso.</em></p>
+            <p>Ticket selecionado: <strong id="ticketSelecionado"></strong></p>
+        </div>
+
+    </div>
+</div>
+
+<script>
+function abrirModalPesagem(ticket) {
+    document.getElementById('ticketSelecionado').innerText = ticket;
+    document.getElementById('modalPesagem').style.display = 'block';
+}
+
+function fecharModal() {
+    document.getElementById('modalPesagem').style.display = 'none';
+}
+</script>
 
 <?php require_once __DIR__ . '/app/views/footer.php'; ?>
