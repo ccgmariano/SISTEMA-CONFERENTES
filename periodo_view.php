@@ -8,7 +8,7 @@ $db = Database::connect();
 $periodoId = (int)($_GET['id'] ?? 0);
 if ($periodoId <= 0) die('Período inválido');
 
-// PERÍODO
+// PERÍODO + OPERAÇÃO
 $stmt = $db->prepare("
     SELECT p.*, o.empresa, o.navio, o.tipo_operacao, o.produto, o.recinto
     FROM periodos p
@@ -19,20 +19,18 @@ $stmt->execute([$periodoId]);
 $periodo = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$periodo) die('Período não encontrado');
 
-// CONFIG DO PERÍODO
+// CONFIGURAÇÕES DO PERÍODO
 $stmt = $db->prepare("SELECT * FROM periodo_config_lancamentos WHERE periodo_id = ?");
 $stmt->execute([$periodoId]);
 $config = $stmt->fetch(PDO::FETCH_ASSOC);
 
+// garante linha
 if (!$config) {
     $db->prepare("INSERT INTO periodo_config_lancamentos (periodo_id) VALUES (?)")
        ->execute([$periodoId]);
     $stmt->execute([$periodoId]);
     $config = $stmt->fetch(PDO::FETCH_ASSOC);
 }
-
-$equipamentos = $db->query("SELECT id, nome FROM equipamentos")->fetchAll(PDO::FETCH_ASSOC);
-$origens = $db->query("SELECT id, nome FROM origem_destino")->fetchAll(PDO::FETCH_ASSOC);
 
 require_once __DIR__ . '/app/views/header.php';
 ?>
@@ -51,44 +49,10 @@ require_once __DIR__ . '/app/views/header.php';
 
 <h4>Configurações de Lançamento</h4>
 
-<div style="display:flex; gap:10px; flex-wrap:wrap" id="configLancamentos">
-    <select id="terno">
-        <option value="">Terno</option>
-        <?php for ($i=1;$i<=10;$i++): ?>
-            <option value="<?= $i ?>" <?= $config['terno']==$i?'selected':'' ?>><?= $i ?></option>
-        <?php endfor; ?>
-    </select>
-
-    <select id="equipamento">
-        <option value="">Equipamento</option>
-        <?php foreach ($equipamentos as $e): ?>
-            <option value="<?= $e['id'] ?>" <?= $config['equipamento_id']==$e['id']?'selected':'' ?>>
-                <?= htmlspecialchars($e['nome']) ?>
-            </option>
-        <?php endforeach; ?>
-    </select>
-
-    <select id="porao">
-        <option value="">Porão</option>
-        <?php for ($i=1;$i<=10;$i++): ?>
-            <option value="<?= $i ?>" <?= $config['porao']==$i?'selected':'' ?>><?= $i ?></option>
-        <?php endfor; ?>
-    </select>
-
-    <select id="deck">
-        <option value="">Deck</option>
-        <option value="LH" <?= $config['deck']=='LH'?'selected':'' ?>>LH</option>
-        <option value="SH" <?= $config['deck']=='SH'?'selected':'' ?>>SH</option>
-    </select>
-
-    <select id="origem_destino">
-        <option value="">Origem/Destino</option>
-        <?php foreach ($origens as $o): ?>
-            <option value="<?= $o['id'] ?>" <?= $config['origem_destino_id']==$o['id']?'selected':'' ?>>
-                <?= htmlspecialchars($o['nome']) ?>
-            </option>
-        <?php endforeach; ?>
-    </select>
+<div id="configLancamentos" style="display:flex;gap:10px;flex-wrap:wrap">
+    <input type="number" id="terno" placeholder="Terno" value="<?= $config['terno'] ?>">
+    <input type="number" id="porao" placeholder="Porão" value="<?= $config['porao'] ?>">
+    <input type="text" id="deck" placeholder="Deck" value="<?= $config['deck'] ?>">
 </div>
 
 <hr>
@@ -103,13 +67,13 @@ require_once __DIR__ . '/app/views/header.php';
 <div id="modalPesagem" style="
     display:none;
     position:fixed;
-    top:0;left:0;right:0;bottom:0;
-    background:rgba(0,0,0,0.5);
-    justify-content:center;
+    inset:0;
+    background:rgba(0,0,0,.5);
     align-items:center;
+    justify-content:center;
 ">
-    <div style="background:#fff;padding:20px;width:500px">
-        <h4>Conferência de Pesagem</h4>
+    <div style="background:#fff;padding:20px;width:420px">
+        <h4>Confirmar Pesagem</h4>
 
         <p><strong>Ticket:</strong> <span id="m_ticket"></span></p>
         <p><strong>Placa:</strong> <span id="m_placa"></span></p>
@@ -117,47 +81,58 @@ require_once __DIR__ . '/app/views/header.php';
 
         <hr>
 
-        <p><strong>Terno:</strong> <?= htmlspecialchars($config['terno']) ?></p>
-        <p><strong>Porão:</strong> <?= htmlspecialchars($config['porao']) ?></p>
-        <p><strong>Deck:</strong> <?= htmlspecialchars($config['deck']) ?></p>
-
-        <button onclick="fecharModal()">Fechar</button>
+        <button onclick="confirmarPesagem()">Confirmar</button>
+        <button onclick="fecharModal()">Cancelar</button>
     </div>
 </div>
 
 <script>
-function salvarConfig() {
-    fetch('/app/controllers/salvar_config_periodo.php', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-            periodo_id:<?= $periodoId ?>,
-            terno:terno.value,
-            equipamento_id:equipamento.value,
-            porao:porao.value,
-            deck:deck.value,
-            origem_destino_id:origem_destino.value
-        })
-    });
-}
-document.querySelectorAll('#configLancamentos select')
-    .forEach(e=>e.onchange=salvarConfig);
+let pesagemAtual = {};
 
-btnCapturar.onclick=()=>{
+btnCapturar.onclick = () => {
     fetch('/app/controllers/captura_controller.php?periodo_id=<?= $periodoId ?>')
-        .then(r=>r.text())
-        .then(html=>resultadoCaptura.innerHTML=html);
+        .then(r => r.text())
+        .then(html => resultadoCaptura.innerHTML = html);
 };
 
-function abrirModalPesagem(ticket, placa, peso){
-    document.getElementById('m_ticket').innerText = ticket;
-    document.getElementById('m_placa').innerText = placa;
-    document.getElementById('m_peso').innerText = peso;
-    document.getElementById('modalPesagem').style.display='flex';
+function abrirModalPesagem(ticket, placa, peso) {
+    pesagemAtual = { ticket, placa, peso };
+
+    m_ticket.innerText = ticket;
+    m_placa.innerText  = placa;
+    m_peso.innerText   = peso;
+
+    modalPesagem.style.display = 'flex';
 }
 
-function fecharModal(){
-    document.getElementById('modalPesagem').style.display='none';
+function fecharModal() {
+    modalPesagem.style.display = 'none';
+}
+
+function confirmarPesagem() {
+
+    fetch('/app/controllers/pesagem_confirmar.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            periodo_id: <?= $periodoId ?>,
+            ticket: pesagemAtual.ticket,
+            placa: pesagemAtual.placa,
+            peso: pesagemAtual.peso,
+            terno: document.getElementById('terno').value,
+            porao: document.getElementById('porao').value,
+            deck: document.getElementById('deck').value
+        })
+    })
+    .then(r => r.json())
+    .then(resp => {
+        if (resp.ok) {
+            fecharModal();
+            btnCapturar.click(); // recarrega lista
+        } else {
+            alert('Erro ao gravar pesagem');
+        }
+    });
 }
 </script>
 
