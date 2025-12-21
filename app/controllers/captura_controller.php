@@ -1,24 +1,27 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_login();
-
 require_once $_SERVER['DOCUMENT_ROOT'] . '/app/database.php';
+
 $db = Database::connect();
 
-// ======================================================
-// 1. VALIDAR PERIODO_ID
-// ======================================================
+// --------------------------------------------------
+// 1. PERÍODO
+// --------------------------------------------------
 $periodoId = isset($_GET['periodo_id']) ? (int)$_GET['periodo_id'] : 0;
 if ($periodoId <= 0) {
     echo "<div class='alert alert-danger'>Período inválido.</div>";
     exit;
 }
 
-// ======================================================
+// --------------------------------------------------
 // 2. BUSCAR PERÍODO + OPERAÇÃO
-// ======================================================
+// --------------------------------------------------
 $stmt = $db->prepare("
-    SELECT p.inicio, p.fim, o.navio
+    SELECT 
+        p.inicio,
+        p.fim,
+        o.navio
     FROM periodos p
     JOIN operacoes o ON o.id = p.operacao_id
     WHERE p.id = ?
@@ -31,36 +34,22 @@ if (!$dados) {
     exit;
 }
 
-// ======================================================
-// 3. DATAS PARA FORMATO BR
-// ======================================================
-function dataParaBR($dataISO) {
-    $dt = DateTime::createFromFormat('Y-m-d H:i', $dataISO);
-    return $dt ? $dt->format('d/m/Y H:i') : '';
+// --------------------------------------------------
+// 3. FORMATAR DATAS (POSEIDON)
+// --------------------------------------------------
+function dataBR($dt) {
+    $d = DateTime::createFromFormat('Y-m-d H:i', $dt);
+    return $d ? $d->format('d/m/Y H:i') : '';
 }
 
-$dataInicio = dataParaBR($dados['inicio']);
-$dataFim    = dataParaBR($dados['fim']);
+$dataInicio = dataBR($dados['inicio']);
+$dataFim    = dataBR($dados['fim']);
 $navio      = trim($dados['navio']);
 
-// ======================================================
-// 4. BUSCAR TICKETS JÁ CONFERIDOS
-// ======================================================
-$stmt = $db->prepare("
-    SELECT ticket
-    FROM pesagens_conferidas
-    WHERE periodo_id = ?
-");
-$stmt->execute([$periodoId]);
-$ticketsConferidos = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
-// Converte para lookup rápido
-$mapConferidos = array_flip($ticketsConferidos);
-
-// ======================================================
-// 5. CHAMAR BACKEND NODE (POSEIDON)
-// ======================================================
-$urlNode = "https://sistema-conferentes-node.onrender.com/poseidon/pesagens";
+// --------------------------------------------------
+// 4. CHAMAR NODE / POSEIDON
+// --------------------------------------------------
+$url = "https://sistema-conferentes-node.onrender.com/poseidon/pesagens";
 
 $payload = json_encode([
     'data_inicio' => $dataInicio,
@@ -68,7 +57,7 @@ $payload = json_encode([
     'navio'       => $navio
 ]);
 
-$ch = curl_init($urlNode);
+$ch = curl_init($url);
 curl_setopt_array($ch, [
     CURLOPT_POST           => true,
     CURLOPT_POSTFIELDS     => $payload,
@@ -80,28 +69,34 @@ $response = curl_exec($ch);
 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 curl_close($ch);
 
-if ($response === false || $httpCode !== 200) {
+if ($httpCode !== 200 || !$response) {
     echo "<div class='alert alert-danger'>Erro ao consultar pesagens.</div>";
     exit;
 }
 
 $data = json_decode($response, true);
-if (!$data || empty($data['ok'])) {
-    echo "<div class='alert alert-danger'>Resposta inválida do servidor.</div>";
+if (!$data || empty($data['registros'])) {
+    echo "<div class='alert alert-warning'>Nenhuma pesagem encontrada.</div>";
     exit;
 }
 
-// ======================================================
-// 6. TABELA DE PESAGENS (COM LUPA CONDICIONAL)
-// ======================================================
-echo "<h4>Pesagens do período</h4>";
-echo "<p><strong>Navio:</strong> {$navio}</p>";
-echo "<p><strong>Período:</strong> {$dataInicio} → {$dataFim}</p>";
-echo "<p><strong>Total:</strong> {$data['total']} registros</p>";
+// --------------------------------------------------
+// 5. BUSCAR TICKETS JÁ CONFERIDOS
+// --------------------------------------------------
+$stmt = $db->prepare("
+    SELECT ticket 
+    FROM pesagens 
+    WHERE periodo_id = ?
+");
+$stmt->execute([$periodoId]);
+$ticketsConferidos = array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'ticket');
 
+// --------------------------------------------------
+// 6. RENDERIZAÇÃO
+// --------------------------------------------------
 echo "<table border='1' cellpadding='6' cellspacing='0' width='100%'>";
 echo "<tr>
-        <th>Ação</th>
+        <th></th>
         <th>Ticket</th>
         <th>Placa</th>
         <th>Entrada</th>
@@ -111,48 +106,27 @@ echo "<tr>
 
 foreach ($data['registros'] as $r) {
 
-    $ticket  = (string)$r['ticket_id'];
-    $placa   = htmlspecialchars($r['placa']);
-    $peso    = htmlspecialchars($r['peso_liquido']);
-    $entrada = htmlspecialchars($r['entrada']);
-    $saida   = htmlspecialchars($r['saida']);
+    $jaConferida = in_array($r['ticket_id'], $ticketsConferidos);
 
-    $jaConferida = isset($mapConferidos[$ticket]);
+    $icone = $jaConferida
+        ? "<span style='color:#999'>🔍</span>"
+        : "<button onclick=\"abrirModalPesagem(
+                '{$r['ticket_id']}',
+                '{$r['placa']}',
+                '{$r['peso_liquido']}',
+                '{$r['saida']}'
+           )\">🔍</button>";
 
-    // Estilo visual
-    $styleLinha = $jaConferida
-        ? "style='background:#f0f0f0;color:#2e7d32;'"
-        : "";
+    $style = $jaConferida ? "style='color:#999;background:#f4f4f4'" : "";
 
-    echo "<tr {$styleLinha}>";
-
-    echo "<td style='text-align:center'>";
-
-    if ($jaConferida) {
-        // Lupa desabilitada
-        echo "<span title='Pesagem já conferida'
-                   style='opacity:0.4; cursor:not-allowed;'>🔍</span>";
-    } else {
-        // Lupa ativa
-        echo "<button
-                title='Conferir pesagem'
-                onclick=\"abrirModalPesagem(
-                    '{$ticket}',
-                    '{$placa}',
-                    '{$peso}'
-                )\"
-              >🔍</button>";
-    }
-
-    echo "</td>";
-
-    echo "<td>{$ticket}</td>
-          <td>{$placa}</td>
-          <td>{$entrada}</td>
-          <td>{$saida}</td>
-          <td>{$peso}</td>";
-
-    echo "</tr>";
+    echo "<tr $style>
+            <td>$icone</td>
+            <td>{$r['ticket_id']}</td>
+            <td>{$r['placa']}</td>
+            <td>{$r['entrada']}</td>
+            <td>{$r['saida']}</td>
+            <td>{$r['peso_liquido']}</td>
+          </tr>";
 }
 
 echo "</table>";
