@@ -6,7 +6,7 @@ require_once __DIR__ . '/app/database.php';
 $db = Database::connect();
 
 // ======================================================
-// 1. RECEBE ID DO PERÍODO
+// 1. ID DO PERÍODO
 // ======================================================
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($id <= 0) {
@@ -37,14 +37,35 @@ if (!$periodo) {
 }
 
 // ======================================================
-// 3. BUSCA DADOS PARA CONFIGURAÇÕES DE LANÇAMENTO
+// 3. CONFIGURAÇÃO DE LANÇAMENTO DO PERÍODO (SE EXISTIR)
 // ======================================================
-$ternos          = $db->query("SELECT id, nome FROM ternos WHERE ativo = 1 ORDER BY nome")->fetchAll(PDO::FETCH_ASSOC);
-$equipamentos    = $db->query("SELECT id, nome FROM equipamentos WHERE ativo = 1 ORDER BY nome")->fetchAll(PDO::FETCH_ASSOC);
-$origensDestino  = $db->query("SELECT id, nome FROM origem_destino ORDER BY nome")->fetchAll(PDO::FETCH_ASSOC);
+$stmt = $db->prepare("
+    SELECT * 
+    FROM periodo_config_lancamentos
+    WHERE periodo_id = ?
+    LIMIT 1
+");
+$stmt->execute([$id]);
+$config = $stmt->fetch(PDO::FETCH_ASSOC);
 
 // ======================================================
-// 4. BUSCA FUNÇÕES DO PERÍODO
+// 4. LISTAS DE APOIO
+// ======================================================
+$equipamentos = $db->query("
+    SELECT id, nome 
+    FROM equipamentos 
+    WHERE ativo = 1 
+    ORDER BY nome
+")->fetchAll(PDO::FETCH_ASSOC);
+
+$origens = $db->query("
+    SELECT id, nome 
+    FROM origem_destino 
+    ORDER BY nome
+")->fetchAll(PDO::FETCH_ASSOC);
+
+// ======================================================
+// 5. FUNÇÕES DO PERÍODO
 // ======================================================
 $stmt = $db->prepare("
     SELECT
@@ -67,10 +88,7 @@ require_once __DIR__ . '/app/views/header.php';
 
     <ul class="list-group mb-4">
         <li class="list-group-item"><strong>Data:</strong> <?= htmlspecialchars($periodo['data']) ?></li>
-        <li class="list-group-item">
-            <strong>Horário:</strong>
-            <?= htmlspecialchars($periodo['inicio']) ?> → <?= htmlspecialchars($periodo['fim']) ?>
-        </li>
+        <li class="list-group-item"><strong>Horário:</strong> <?= htmlspecialchars($periodo['inicio']) ?> → <?= htmlspecialchars($periodo['fim']) ?></li>
         <li class="list-group-item"><strong>Empresa:</strong> <?= htmlspecialchars($periodo['empresa']) ?></li>
         <li class="list-group-item"><strong>Navio:</strong> <?= htmlspecialchars($periodo['navio']) ?></li>
         <li class="list-group-item"><strong>Tipo:</strong> <?= htmlspecialchars($periodo['tipo_operacao']) ?></li>
@@ -78,52 +96,61 @@ require_once __DIR__ . '/app/views/header.php';
         <li class="list-group-item"><strong>Recinto:</strong> <?= htmlspecialchars($periodo['recinto']) ?></li>
     </ul>
 
-    <!-- ====================================================== -->
-    <!-- CONFIGURAÇÕES DE LANÇAMENTO (INLINE, COMO NO APP OFICIAL) -->
-    <!-- ====================================================== -->
+    <hr>
 
-    <h4>Configurações de Lançamento</h4>
+    <!-- CONFIGURAÇÕES DE LANÇAMENTO -->
+    <h4>Configurações de Lançamento do Período</h4>
 
-    <form method="POST" action="/config_lancamentos.php" class="row g-3 mb-4">
+    <form method="POST" action="/app/controllers/config_lancamentos_salvar.php" class="row g-3 mb-4">
 
         <input type="hidden" name="periodo_id" value="<?= (int)$id ?>">
 
         <div class="col-md-2">
             <label class="form-label">Terno</label>
-            <select name="terno_id" class="form-select">
-                <option value="">-- Selecionar --</option>
-                <?php foreach ($ternos as $t): ?>
-                    <option value="<?= $t['id'] ?>"><?= htmlspecialchars($t['nome']) ?></option>
-                <?php endforeach; ?>
-            </select>
+            <input type="number"
+                   name="terno"
+                   class="form-control"
+                   value="<?= htmlspecialchars($config['terno'] ?? 1) ?>">
         </div>
 
         <div class="col-md-3">
             <label class="form-label">Equipamento</label>
             <select name="equipamento_id" class="form-select">
-                <option value="">-- Selecionar --</option>
+                <option value="">-- selecionar --</option>
                 <?php foreach ($equipamentos as $e): ?>
-                    <option value="<?= $e['id'] ?>"><?= htmlspecialchars($e['nome']) ?></option>
+                    <option value="<?= $e['id'] ?>"
+                        <?= (!empty($config['equipamento_id']) && $config['equipamento_id'] == $e['id']) ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($e['nome']) ?>
+                    </option>
                 <?php endforeach; ?>
             </select>
         </div>
 
         <div class="col-md-2">
             <label class="form-label">Porão</label>
-            <input type="number" name="porao" class="form-control">
+            <input type="number"
+                   name="porao"
+                   class="form-control"
+                   value="<?= htmlspecialchars($config['porao'] ?? '') ?>">
         </div>
 
         <div class="col-md-2">
             <label class="form-label">Deck</label>
-            <input type="text" name="deck" class="form-control">
+            <input type="text"
+                   name="deck"
+                   class="form-control"
+                   value="<?= htmlspecialchars($config['deck'] ?? '') ?>">
         </div>
 
         <div class="col-md-3">
             <label class="form-label">Origem / Destino</label>
             <select name="origem_destino_id" class="form-select">
-                <option value="">-- Selecionar --</option>
-                <?php foreach ($origensDestino as $o): ?>
-                    <option value="<?= $o['id'] ?>"><?= htmlspecialchars($o['nome']) ?></option>
+                <option value="">-- selecionar --</option>
+                <?php foreach ($origens as $o): ?>
+                    <option value="<?= $o['id'] ?>"
+                        <?= (!empty($config['origem_destino_id']) && $config['origem_destino_id'] == $o['id']) ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($o['nome']) ?>
+                    </option>
                 <?php endforeach; ?>
             </select>
         </div>
@@ -133,15 +160,11 @@ require_once __DIR__ . '/app/views/header.php';
                 Salvar Configurações do Período
             </button>
         </div>
-
     </form>
 
     <hr>
 
-    <!-- ====================================================== -->
     <!-- CAPTURA DE PESAGENS -->
-    <!-- ====================================================== -->
-
     <h4>Captura de Pesagens</h4>
 
     <button id="btnCapturar" class="btn btn-success w-100 mb-3">
@@ -160,13 +183,7 @@ require_once __DIR__ . '/app/views/header.php';
 
             fetch("/app/controllers/captura_controller.php?periodo_id=<?= (int)$id ?>")
                 .then(resp => resp.text())
-                .then(html => {
-                    divResultado.innerHTML = html;
-                })
-                .catch(() => {
-                    divResultado.innerHTML =
-                        "<div class='alert alert-danger'>Erro ao consultar pesagens.</div>";
-                })
+                .then(html => divResultado.innerHTML = html)
                 .finally(() => {
                     btn.disabled = false;
                     btn.innerText = "Capturar Pesagens do Período";
@@ -176,10 +193,7 @@ require_once __DIR__ . '/app/views/header.php';
 
     <hr>
 
-    <!-- ====================================================== -->
     <!-- PESAGENS CONFERIDAS -->
-    <!-- ====================================================== -->
-
     <h4>Pesagens Conferidas</h4>
 
     <div id="pesagensConferidas">
@@ -191,23 +205,15 @@ require_once __DIR__ . '/app/views/header.php';
 
     <hr>
 
-    <!-- ====================================================== -->
     <!-- FUNÇÕES E CONFERENTES -->
-    <!-- ====================================================== -->
-
     <h3>Funções escaladas</h3>
 
     <?php if (empty($funcoesPeriodo)): ?>
-
         <p><em>Nenhuma função foi escalada para este período.</em></p>
-
     <?php else: ?>
-
         <?php foreach ($funcoesPeriodo as $f): ?>
-
             <fieldset style="margin-bottom:15px; padding:10px; border:1px solid #999;">
                 <legend><strong><?= htmlspecialchars($f['funcao_nome']) ?></strong></legend>
-
                 <?php
                 $stmt = $db->prepare("
                     SELECT a.nome
@@ -219,7 +225,6 @@ require_once __DIR__ . '/app/views/header.php';
                 $stmt->execute([$f['periodo_funcao_id']]);
                 $conferentes = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 ?>
-
                 <?php if (empty($conferentes)): ?>
                     <p>Nenhum conferente atribuído.</p>
                 <?php else: ?>
@@ -229,11 +234,8 @@ require_once __DIR__ . '/app/views/header.php';
                         <?php endforeach; ?>
                     </ul>
                 <?php endif; ?>
-
             </fieldset>
-
         <?php endforeach; ?>
-
     <?php endif; ?>
 
     <a href="/operacao_view.php?id=<?= (int)$periodo['operacao_id'] ?>"
