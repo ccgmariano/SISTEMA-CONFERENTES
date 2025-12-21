@@ -8,7 +8,6 @@ $db = Database::connect();
 $periodoId = (int)($_GET['id'] ?? 0);
 if ($periodoId <= 0) die('Período inválido');
 
-// PERÍODO + OPERAÇÃO
 $stmt = $db->prepare("
     SELECT p.*, o.empresa, o.navio, o.tipo_operacao, o.produto, o.recinto
     FROM periodos p
@@ -18,19 +17,6 @@ $stmt = $db->prepare("
 $stmt->execute([$periodoId]);
 $periodo = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$periodo) die('Período não encontrado');
-
-// CONFIGURAÇÕES DO PERÍODO
-$stmt = $db->prepare("SELECT * FROM periodo_config_lancamentos WHERE periodo_id = ?");
-$stmt->execute([$periodoId]);
-$config = $stmt->fetch(PDO::FETCH_ASSOC);
-
-// garante linha
-if (!$config) {
-    $db->prepare("INSERT INTO periodo_config_lancamentos (periodo_id) VALUES (?)")
-       ->execute([$periodoId]);
-    $stmt->execute([$periodoId]);
-    $config = $stmt->fetch(PDO::FETCH_ASSOC);
-}
 
 require_once __DIR__ . '/app/views/header.php';
 ?>
@@ -44,16 +30,6 @@ require_once __DIR__ . '/app/views/header.php';
     <li><strong>Horário:</strong> <?= htmlspecialchars($periodo['inicio']) ?> → <?= htmlspecialchars($periodo['fim']) ?></li>
     <li><strong>Navio:</strong> <?= htmlspecialchars($periodo['navio']) ?></li>
 </ul>
-
-<hr>
-
-<h4>Configurações de Lançamento</h4>
-
-<div id="configLancamentos" style="display:flex;gap:10px;flex-wrap:wrap">
-    <input type="number" id="terno" placeholder="Terno" value="<?= $config['terno'] ?>">
-    <input type="number" id="porao" placeholder="Porão" value="<?= $config['porao'] ?>">
-    <input type="text" id="deck" placeholder="Deck" value="<?= $config['deck'] ?>">
-</div>
 
 <hr>
 
@@ -87,30 +63,33 @@ require_once __DIR__ . '/app/views/header.php';
 </div>
 
 <script>
+const btnCapturar = document.getElementById('btnCapturar');
+const resultadoCaptura = document.getElementById('resultadoCaptura');
+
 let pesagemAtual = {};
 
-btnCapturar.onclick = () => {
+btnCapturar.onclick = function () {
     fetch('/app/controllers/captura_controller.php?periodo_id=<?= $periodoId ?>')
         .then(r => r.text())
-        .then(html => resultadoCaptura.innerHTML = html);
+        .then(html => resultadoCaptura.innerHTML = html)
+        .catch(() => alert('Erro ao capturar pesagens'));
 };
 
-function abrirModalPesagem(ticket, placa, peso) {
-    pesagemAtual = { ticket, placa, peso };
+function abrirModalPesagem(ticket, placa, peso, dataHora) {
+    pesagemAtual = { ticket, placa, peso, dataHora };
 
-    m_ticket.innerText = ticket;
-    m_placa.innerText  = placa;
-    m_peso.innerText   = peso;
+    document.getElementById('m_ticket').innerText = ticket;
+    document.getElementById('m_placa').innerText  = placa;
+    document.getElementById('m_peso').innerText   = peso;
 
-    modalPesagem.style.display = 'flex';
+    document.getElementById('modalPesagem').style.display = 'flex';
 }
 
 function fecharModal() {
-    modalPesagem.style.display = 'none';
+    document.getElementById('modalPesagem').style.display = 'none';
 }
 
 function confirmarPesagem() {
-
     fetch('/app/controllers/pesagem_confirmar.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -119,16 +98,14 @@ function confirmarPesagem() {
             ticket: pesagemAtual.ticket,
             placa: pesagemAtual.placa,
             peso: pesagemAtual.peso,
-            terno: document.getElementById('terno').value,
-            porao: document.getElementById('porao').value,
-            deck: document.getElementById('deck').value
+            data_hora: pesagemAtual.dataHora
         })
     })
     .then(r => r.json())
     .then(resp => {
         if (resp.ok) {
             fecharModal();
-            btnCapturar.click(); // recarrega lista
+            btnCapturar.click();
         } else {
             alert('Erro ao gravar pesagem');
         }
