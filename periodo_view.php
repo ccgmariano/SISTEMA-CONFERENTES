@@ -37,7 +37,14 @@ if (!$periodo) {
 }
 
 // ======================================================
-// 3. BUSCA FUNÇÕES DO PERÍODO
+// 3. BUSCA DADOS PARA CONFIGURAÇÕES DE LANÇAMENTO
+// ======================================================
+$ternos          = $db->query("SELECT id, nome FROM ternos WHERE ativo = 1 ORDER BY nome")->fetchAll(PDO::FETCH_ASSOC);
+$equipamentos    = $db->query("SELECT id, nome FROM equipamentos WHERE ativo = 1 ORDER BY nome")->fetchAll(PDO::FETCH_ASSOC);
+$origensDestino  = $db->query("SELECT id, nome FROM origem_destino ORDER BY nome")->fetchAll(PDO::FETCH_ASSOC);
+
+// ======================================================
+// 4. BUSCA FUNÇÕES DO PERÍODO
 // ======================================================
 $stmt = $db->prepare("
     SELECT
@@ -71,19 +78,70 @@ require_once __DIR__ . '/app/views/header.php';
         <li class="list-group-item"><strong>Recinto:</strong> <?= htmlspecialchars($periodo['recinto']) ?></li>
     </ul>
 
-    <hr>
+    <!-- ====================================================== -->
+    <!-- CONFIGURAÇÕES DE LANÇAMENTO (INLINE, COMO NO APP OFICIAL) -->
+    <!-- ====================================================== -->
 
-    <!-- CONFIGURAÇÕES DE LANÇAMENTO -->
     <h4>Configurações de Lançamento</h4>
 
-    <a href="/config_lancamentos.php?periodo_id=<?= (int)$id ?>"
-       class="btn btn-outline-secondary mb-3">
-        Configurar Lançamentos do Período
-    </a>
+    <form method="POST" action="/config_lancamentos.php" class="row g-3 mb-4">
+
+        <input type="hidden" name="periodo_id" value="<?= (int)$id ?>">
+
+        <div class="col-md-2">
+            <label class="form-label">Terno</label>
+            <select name="terno_id" class="form-select">
+                <option value="">-- Selecionar --</option>
+                <?php foreach ($ternos as $t): ?>
+                    <option value="<?= $t['id'] ?>"><?= htmlspecialchars($t['nome']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Equipamento</label>
+            <select name="equipamento_id" class="form-select">
+                <option value="">-- Selecionar --</option>
+                <?php foreach ($equipamentos as $e): ?>
+                    <option value="<?= $e['id'] ?>"><?= htmlspecialchars($e['nome']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label">Porão</label>
+            <input type="number" name="porao" class="form-control">
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label">Deck</label>
+            <input type="text" name="deck" class="form-control">
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Origem / Destino</label>
+            <select name="origem_destino_id" class="form-select">
+                <option value="">-- Selecionar --</option>
+                <?php foreach ($origensDestino as $o): ?>
+                    <option value="<?= $o['id'] ?>"><?= htmlspecialchars($o['nome']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+
+        <div class="col-12">
+            <button class="btn btn-primary">
+                Salvar Configurações do Período
+            </button>
+        </div>
+
+    </form>
 
     <hr>
 
+    <!-- ====================================================== -->
     <!-- CAPTURA DE PESAGENS -->
+    <!-- ====================================================== -->
+
     <h4>Captura de Pesagens</h4>
 
     <button id="btnCapturar" class="btn btn-success w-100 mb-3">
@@ -118,7 +176,10 @@ require_once __DIR__ . '/app/views/header.php';
 
     <hr>
 
+    <!-- ====================================================== -->
     <!-- PESAGENS CONFERIDAS -->
+    <!-- ====================================================== -->
+
     <h4>Pesagens Conferidas</h4>
 
     <div id="pesagensConferidas">
@@ -130,7 +191,10 @@ require_once __DIR__ . '/app/views/header.php';
 
     <hr>
 
+    <!-- ====================================================== -->
     <!-- FUNÇÕES E CONFERENTES -->
+    <!-- ====================================================== -->
+
     <h3>Funções escaladas</h3>
 
     <?php if (empty($funcoesPeriodo)): ?>
