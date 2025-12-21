@@ -1,14 +1,14 @@
 <?php
-
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_login();
 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/app/database.php';
+$db = Database::connect();
 
 // ======================================================
 // 1. VALIDAR PERIODO_ID
 // ======================================================
-$periodoId = isset($_GET['periodo_id']) ? (int) $_GET['periodo_id'] : 0;
+$periodoId = isset($_GET['periodo_id']) ? (int)$_GET['periodo_id'] : 0;
 
 if ($periodoId <= 0) {
     echo "<div class='alert alert-danger'>Período inválido.</div>";
@@ -16,10 +16,8 @@ if ($periodoId <= 0) {
 }
 
 // ======================================================
-// 2. BUSCAR PERÍODO + OPERAÇÃO NO BANCO
+// 2. BUSCAR PERÍODO + OPERAÇÃO
 // ======================================================
-$db = Database::connect();
-
 $sql = "
     SELECT 
         p.inicio,
@@ -29,7 +27,6 @@ $sql = "
     JOIN operacoes o ON o.id = p.operacao_id
     WHERE p.id = :id
 ";
-
 $stmt = $db->prepare($sql);
 $stmt->execute([':id' => $periodoId]);
 $dados = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -89,16 +86,16 @@ if (!$data || !isset($data['ok']) || !$data['ok']) {
 }
 
 // ======================================================
-// 5. EXIBIR RESULTADO EM TABELA (COM “LUPA” COMO BOTÃO JS)
+// 5. EXIBIR RESULTADO EM TABELA (COM LUPA FUNCIONAL)
 // ======================================================
-echo "<h3>Pesagens do período</h3>";
-echo "<p><strong>Navio:</strong> " . htmlspecialchars($navio) . "</p>";
-echo "<p><strong>Período:</strong> " . htmlspecialchars($dataInicio) . " → " . htmlspecialchars($dataFim) . "</p>";
-echo "<p><strong>Total:</strong> " . (int)$data['total'] . " registros</p>";
+echo "<h4>Pesagens do período</h4>";
+echo "<p><strong>Navio:</strong> {$navio}</p>";
+echo "<p><strong>Período:</strong> {$dataInicio} → {$dataFim}</p>";
+echo "<p><strong>Total:</strong> {$data['total']} registros</p>";
 
-echo "<table border='1' cellpadding='6' cellspacing='0' style='width:100%; border-collapse:collapse;'>";
+echo "<table border='1' cellpadding='6' cellspacing='0' width='100%'>";
 echo "<tr>
-        <th style='width:60px;'>Ação</th>
+        <th>Ação</th>
         <th>Ticket</th>
         <th>Placa</th>
         <th>Entrada</th>
@@ -108,31 +105,29 @@ echo "<tr>
 
 foreach ($data['registros'] as $r) {
 
-    $ticket = isset($r['ticket_id']) ? (string)$r['ticket_id'] : '';
-    $placa  = isset($r['placa']) ? (string)$r['placa'] : '';
-    $entrada = isset($r['entrada']) ? (string)$r['entrada'] : '';
-    $saida   = isset($r['saida']) ? (string)$r['saida'] : '';
-    $peso    = isset($r['peso_liquido']) ? (string)$r['peso_liquido'] : '';
+    $ticket = htmlspecialchars($r['ticket_id']);
+    $placa  = htmlspecialchars($r['placa']);
+    $peso   = htmlspecialchars($r['peso_liquido']);
+    $entrada = htmlspecialchars($r['entrada']);
+    $saida   = htmlspecialchars($r['saida']);
 
-    echo "<tr>";
-
-    // ✅ “Lupa” agora é um botão que chamará JS (no próximo passo faremos o modal)
-    echo "<td style='text-align:center;'>
-            <button type='button'
-                    title='Conferir'
-                    onclick='abrirModalPesagem(\"" . htmlspecialchars($ticket, ENT_QUOTES) . "\")'
-                    style='cursor:pointer; padding:4px 10px;'>
-                🔍
-            </button>
-          </td>";
-
-    echo "<td>" . htmlspecialchars($ticket) . "</td>
-          <td>" . htmlspecialchars($placa) . "</td>
-          <td>" . htmlspecialchars($entrada) . "</td>
-          <td>" . htmlspecialchars($saida) . "</td>
-          <td>" . htmlspecialchars($peso) . "</td>";
-
-    echo "</tr>";
+    echo "<tr>
+            <td style='text-align:center'>
+                <button
+                    title='Conferir pesagem'
+                    onclick=\"abrirModalPesagem(
+                        '{$ticket}',
+                        '{$placa}',
+                        '{$peso}'
+                    )\"
+                >🔍</button>
+            </td>
+            <td>{$ticket}</td>
+            <td>{$placa}</td>
+            <td>{$entrada}</td>
+            <td>{$saida}</td>
+            <td>{$peso}</td>
+          </tr>";
 }
 
 echo "</table>";
