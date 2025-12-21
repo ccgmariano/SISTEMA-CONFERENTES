@@ -11,7 +11,7 @@ return [
         ],
         'ativo' => [
             'label' => 'Ativo',
-            'type' => 'text'
+            'type' => 'boolean'
         ]
     ]
 ];
