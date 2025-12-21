@@ -6,7 +6,7 @@ require_once __DIR__ . '/app/database.php';
 $db = Database::connect();
 
 // ======================================================
-// 1. RECEBE ID DO PERÍODO
+// ID DO PERÍODO
 // ======================================================
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($id <= 0) {
@@ -14,12 +14,12 @@ if ($id <= 0) {
 }
 
 // ======================================================
-// 2. BUSCA PERÍODO + OPERAÇÃO
+// BUSCA PERÍODO + OPERAÇÃO
 // ======================================================
 $stmt = $db->prepare("
     SELECT 
         p.*,
-        o.id   AS operacao_id,
+        o.id AS operacao_id,
         o.empresa,
         o.navio,
         o.tipo_operacao,
@@ -35,22 +35,6 @@ $periodo = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$periodo) {
     die('Período não encontrado.');
 }
-
-// ======================================================
-// 3. LISTAS PARA CONFIGURAÇÕES DE LANÇAMENTO
-// ======================================================
-$equipamentos = $db->query("
-    SELECT id, nome 
-    FROM equipamentos 
-    WHERE ativo = 1 
-    ORDER BY nome
-")->fetchAll();
-
-$origens = $db->query("
-    SELECT id, nome 
-    FROM origem_destino 
-    ORDER BY nome
-")->fetchAll();
 
 require_once __DIR__ . '/app/views/header.php';
 ?>
@@ -74,80 +58,7 @@ require_once __DIR__ . '/app/views/header.php';
 
     <hr>
 
-    <!-- CONFIGURAÇÕES DE LANÇAMENTO (ESTADO DE TELA) -->
-    <h4>Configurações de Lançamento</h4>
-
-    <div class="row mb-3">
-        <div class="col">
-            <label>Terno</label>
-            <select id="cfg_terno" class="form-control">
-                <option value="">-- Nº Terno --</option>
-                <?php for ($i = 1; $i <= 10; $i++): ?>
-                    <option value="<?= $i ?>"><?= $i ?></option>
-                <?php endfor; ?>
-            </select>
-        </div>
-
-        <div class="col">
-            <label>Equipamento</label>
-            <select id="cfg_equipamento" class="form-control">
-                <option value="">-- Equipamento --</option>
-                <?php foreach ($equipamentos as $e): ?>
-                    <option value="<?= $e['id'] ?>"><?= htmlspecialchars($e['nome']) ?></option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-
-        <div class="col">
-            <label>Porão</label>
-            <select id="cfg_porao" class="form-control">
-                <option value="">-- Porão --</option>
-                <?php for ($i = 1; $i <= 9; $i++): ?>
-                    <option value="<?= $i ?>"><?= $i ?></option>
-                <?php endfor; ?>
-            </select>
-        </div>
-
-        <div class="col">
-            <label>Deck</label>
-            <select id="cfg_deck" class="form-control">
-                <option value="">-- Deck --</option>
-                <option value="LH">LH</option>
-                <option value="RH">RH</option>
-            </select>
-        </div>
-
-        <div class="col">
-            <label>Origem / Destino</label>
-            <select id="cfg_origem" class="form-control">
-                <option value="">-- Origem/Destino --</option>
-                <?php foreach ($origens as $o): ?>
-                    <option value="<?= $o['id'] ?>"><?= htmlspecialchars($o['nome']) ?></option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-    </div>
-
-    <hr>
-
-<script>
-/* FUNÇÕES GLOBAIS — NECESSÁRIO PARA HTML INJETADO VIA FETCH */
-
-window.abrirModalPesagem = function(ticket) {
-    const span = document.getElementById('ticketSelecionado');
-    if (span) {
-        span.innerText = ticket;
-    }
-    document.getElementById('modalPesagem').style.display = 'block';
-};
-
-window.fecharModal = function() {
-    document.getElementById('modalPesagem').style.display = 'none';
-};
-</script>
-
-    
-    <!-- CAPTURA DE PESAGENS -->
+    <!-- CAPTURA -->
     <h4>Captura de Pesagens</h4>
 
     <button id="btnCapturar" class="btn btn-success mb-3">
@@ -157,34 +68,17 @@ window.fecharModal = function() {
     <div id="resultadoCaptura"></div>
 
     <script>
-        document.getElementById('btnCapturar').addEventListener('click', function () {
-            fetch("/app/controllers/captura_controller.php?periodo_id=<?= (int)$id ?>")
-                .then(r => r.text())
-                .then(html => document.getElementById('resultadoCaptura').innerHTML = html);
-        });
+    document.getElementById('btnCapturar').addEventListener('click', function () {
+        fetch("/app/controllers/captura_controller.php?periodo_id=<?= (int)$id ?>")
+            .then(r => r.text())
+            .then(html => document.getElementById('resultadoCaptura').innerHTML = html);
+    });
     </script>
-
-    <hr>
-
-    <!-- PESAGENS CONFERIDAS -->
-    <h4>Pesagens Conferidas</h4>
-
-    <div id="pesagensConferidas">
-        <?php
-            $_GET['periodo_id'] = $id;
-            include $_SERVER['DOCUMENT_ROOT'] . '/app/controllers/pesagens_list.php';
-        ?>
-    </div>
-
-    <a href="/operacao_view.php?id=<?= (int)$periodo['operacao_id'] ?>"
-       class="btn btn-secondary mt-4">
-        Voltar à Operação
-    </a>
 
 </div>
 
 <!-- ====================================================== -->
-<!-- MODAL DA LUPA (BASE – SEM LÓGICA AINDA) -->
+<!-- MODAL -->
 <!-- ====================================================== -->
 <div id="modalPesagem"
      style="display:none;
@@ -196,28 +90,48 @@ window.fecharModal = function() {
 
     <div style="
         background:#fff;
-        width:600px;
-        margin:60px auto;
+        width:500px;
+        margin:80px auto;
         padding:20px;
         position:relative;
+        border-radius:4px;
     ">
 
-        <button onclick="fecharModal()"
+        <button onclick="window.fecharModal()"
                 style="position:absolute; top:10px; right:10px;">
             ✖
         </button>
 
-        <h3>Conferência da Pesagem</h3>
+        <h3>Modal de Pesagem</h3>
 
-        <div id="conteudoModal">
-            <!-- conteúdo virá no próximo passo -->
-            <p><em>Modal aberto com sucesso.</em></p>
-            <p>Ticket selecionado: <strong id="ticketSelecionado"></strong></p>
-        </div>
+        <p>
+            Ticket selecionado:
+            <strong id="ticketSelecionado"></strong>
+        </p>
+
+        <p><em>Se você está vendo isso, o modal FUNCIONA.</em></p>
 
     </div>
 </div>
 
+<!-- ====================================================== -->
+<!-- JS GLOBAL (OBRIGATÓRIO PARA FETCH) -->
+<!-- ====================================================== -->
+<script>
+/* FUNÇÕES GLOBAIS */
 
+window.abrirModalPesagem = function(ticket) {
+    console.log('abrirModalPesagem chamado:', ticket);
+
+    const span = document.getElementById('ticketSelecionado');
+    span.innerText = ticket;
+
+    document.getElementById('modalPesagem').style.display = 'block';
+};
+
+window.fecharModal = function() {
+    document.getElementById('modalPesagem').style.display = 'none';
+};
+</script>
 
 <?php require_once __DIR__ . '/app/views/footer.php'; ?>
