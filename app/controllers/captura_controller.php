@@ -16,7 +16,7 @@ if ($periodoId <= 0) {
 }
 
 // ======================================================
-// 2. BUSCAR PERÍODO + OPERAÇÃO
+// 2. BUSCAR PERÍODO + OPERAÇÃO NO BANCO
 // ======================================================
 $db = Database::connect();
 
@@ -89,17 +89,16 @@ if (!$data || !isset($data['ok']) || !$data['ok']) {
 }
 
 // ======================================================
-// 5. EXIBIR RESULTADO
+// 5. EXIBIR RESULTADO EM TABELA (COM “LUPA” COMO BOTÃO JS)
 // ======================================================
 echo "<h3>Pesagens do período</h3>";
-echo "<p><strong>Navio:</strong> {$navio}</p>";
-echo "<p><strong>Período:</strong> {$dataInicio} → {$dataFim}</p>";
-echo "<p><strong>Total:</strong> {$data['total']} registros</p>";
+echo "<p><strong>Navio:</strong> " . htmlspecialchars($navio) . "</p>";
+echo "<p><strong>Período:</strong> " . htmlspecialchars($dataInicio) . " → " . htmlspecialchars($dataFim) . "</p>";
+echo "<p><strong>Total:</strong> " . (int)$data['total'] . " registros</p>";
 
-echo "<table border='1' cellpadding='6' cellspacing='0' width='100%'>";
-
+echo "<table border='1' cellpadding='6' cellspacing='0' style='width:100%; border-collapse:collapse;'>";
 echo "<tr>
-        <th style='width:60px'>Ação</th>
+        <th style='width:60px;'>Ação</th>
         <th>Ticket</th>
         <th>Placa</th>
         <th>Entrada</th>
@@ -109,25 +108,31 @@ echo "<tr>
 
 foreach ($data['registros'] as $r) {
 
-    $ticket = (int) $r['ticket_id'];
+    $ticket = isset($r['ticket_id']) ? (string)$r['ticket_id'] : '';
+    $placa  = isset($r['placa']) ? (string)$r['placa'] : '';
+    $entrada = isset($r['entrada']) ? (string)$r['entrada'] : '';
+    $saida   = isset($r['saida']) ? (string)$r['saida'] : '';
+    $peso    = isset($r['peso_liquido']) ? (string)$r['peso_liquido'] : '';
 
-    echo "<tr>
+    echo "<tr>";
 
-        <td style='text-align:center'>
-            <a href='/pesagem_conferir.php?periodo_id={$periodoId}&ticket={$ticket}'
-               title='Conferir pesagem'
-               style='font-size:18px; text-decoration:none'>
-               🔍
-            </a>
-        </td>
+    // ✅ “Lupa” agora é um botão que chamará JS (no próximo passo faremos o modal)
+    echo "<td style='text-align:center;'>
+            <button type='button'
+                    title='Conferir'
+                    onclick='abrirModalPesagem(\"" . htmlspecialchars($ticket, ENT_QUOTES) . "\")'
+                    style='cursor:pointer; padding:4px 10px;'>
+                🔍
+            </button>
+          </td>";
 
-        <td>{$ticket}</td>
-        <td>{$r['placa']}</td>
-        <td>{$r['entrada']}</td>
-        <td>{$r['saida']}</td>
-        <td>{$r['peso_liquido']}</td>
+    echo "<td>" . htmlspecialchars($ticket) . "</td>
+          <td>" . htmlspecialchars($placa) . "</td>
+          <td>" . htmlspecialchars($entrada) . "</td>
+          <td>" . htmlspecialchars($saida) . "</td>
+          <td>" . htmlspecialchars($peso) . "</td>";
 
-    </tr>";
+    echo "</tr>";
 }
 
 echo "</table>";
