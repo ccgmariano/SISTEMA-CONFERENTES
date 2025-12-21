@@ -36,102 +36,127 @@ if (!$periodo) {
     die('Período não encontrado.');
 }
 
+// ======================================================
+// BUSCA CONFIGURAÇÃO DE LANÇAMENTO DO PERÍODO
+// ======================================================
+$stmt = $db->prepare("SELECT * FROM periodo_config_lancamentos WHERE periodo_id = ?");
+$stmt->execute([$id]);
+$config = $stmt->fetch(PDO::FETCH_ASSOC);
+
+// ======================================================
+// LISTAS
+// ======================================================
+$equipamentos = $db->query("SELECT id, nome FROM equipamentos WHERE ativo = 1 ORDER BY nome")->fetchAll(PDO::FETCH_ASSOC);
+$origens = $db->query("SELECT id, nome FROM origem_destino ORDER BY nome")->fetchAll(PDO::FETCH_ASSOC);
+
 require_once __DIR__ . '/app/views/header.php';
 ?>
 
 <div class="container mt-4">
 
-    <h2>Período</h2>
+<h2>Período</h2>
 
-    <ul class="list-group mb-4">
-        <li class="list-group-item"><strong>Data:</strong> <?= htmlspecialchars($periodo['data']) ?></li>
-        <li class="list-group-item">
-            <strong>Horário:</strong>
-            <?= htmlspecialchars($periodo['inicio']) ?> → <?= htmlspecialchars($periodo['fim']) ?>
-        </li>
-        <li class="list-group-item"><strong>Empresa:</strong> <?= htmlspecialchars($periodo['empresa']) ?></li>
-        <li class="list-group-item"><strong>Navio:</strong> <?= htmlspecialchars($periodo['navio']) ?></li>
-        <li class="list-group-item"><strong>Tipo:</strong> <?= htmlspecialchars($periodo['tipo_operacao']) ?></li>
-        <li class="list-group-item"><strong>Produto:</strong> <?= htmlspecialchars($periodo['produto']) ?></li>
-        <li class="list-group-item"><strong>Recinto:</strong> <?= htmlspecialchars($periodo['recinto']) ?></li>
-    </ul>
+<ul class="list-group mb-4">
+    <li class="list-group-item"><strong>Data:</strong> <?= htmlspecialchars($periodo['data']) ?></li>
+    <li class="list-group-item"><strong>Horário:</strong> <?= $periodo['inicio'] ?> → <?= $periodo['fim'] ?></li>
+    <li class="list-group-item"><strong>Empresa:</strong> <?= htmlspecialchars($periodo['empresa']) ?></li>
+    <li class="list-group-item"><strong>Navio:</strong> <?= htmlspecialchars($periodo['navio']) ?></li>
+    <li class="list-group-item"><strong>Tipo:</strong> <?= htmlspecialchars($periodo['tipo_operacao']) ?></li>
+    <li class="list-group-item"><strong>Produto:</strong> <?= htmlspecialchars($periodo['produto']) ?></li>
+    <li class="list-group-item"><strong>Recinto:</strong> <?= htmlspecialchars($periodo['recinto']) ?></li>
+</ul>
 
-    <hr>
+<hr>
 
-    <!-- CAPTURA -->
-    <h4>Captura de Pesagens</h4>
+<!-- ====================================================== -->
+<!-- CONFIGURAÇÕES DE LANÇAMENTO -->
+<!-- ====================================================== -->
+<h4>Configurações de Lançamento</h4>
 
-    <button id="btnCapturar" class="btn btn-success mb-3">
-        Capturar Pesagens do Período
-    </button>
+<form id="formConfigLancamento">
 
-    <div id="resultadoCaptura"></div>
+<input type="hidden" name="periodo_id" value="<?= $id ?>">
 
-    <script>
-    document.getElementById('btnCapturar').addEventListener('click', function () {
-        fetch("/app/controllers/captura_controller.php?periodo_id=<?= (int)$id ?>")
-            .then(r => r.text())
-            .then(html => document.getElementById('resultadoCaptura').innerHTML = html);
-    });
-    </script>
+<div style="display:flex; gap:10px; flex-wrap:wrap">
+
+<input type="number" name="terno" placeholder="Terno"
+       value="<?= $config['terno'] ?? '' ?>">
+
+<input type="number" name="porao" placeholder="Porão"
+       value="<?= $config['porao'] ?? '' ?>">
+
+<input type="text" name="deck" placeholder="Deck"
+       value="<?= $config['deck'] ?? '' ?>">
+
+<select name="equipamento_id">
+    <option value="">-- Equipamento --</option>
+    <?php foreach ($equipamentos as $e): ?>
+        <option value="<?= $e['id'] ?>"
+            <?= ($config['equipamento_id'] ?? '') == $e['id'] ? 'selected' : '' ?>>
+            <?= htmlspecialchars($e['nome']) ?>
+        </option>
+    <?php endforeach; ?>
+</select>
+
+<select name="origem_destino_id">
+    <option value="">-- Origem / Destino --</option>
+    <?php foreach ($origens as $o): ?>
+        <option value="<?= $o['id'] ?>"
+            <?= ($config['origem_destino_id'] ?? '') == $o['id'] ? 'selected' : '' ?>>
+            <?= htmlspecialchars($o['nome']) ?>
+        </option>
+    <?php endforeach; ?>
+</select>
 
 </div>
 
-<!-- ====================================================== -->
-<!-- MODAL -->
-<!-- ====================================================== -->
-<div id="modalPesagem"
-     style="display:none;
-            position:fixed;
-            top:0; left:0;
-            width:100%; height:100%;
-            background:rgba(0,0,0,0.6);
-            z-index:9999;">
+<br>
 
-    <div style="
-        background:#fff;
-        width:500px;
-        margin:80px auto;
-        padding:20px;
-        position:relative;
-        border-radius:4px;
-    ">
+<button type="button" onclick="salvarConfigLancamento()" class="btn btn-primary">
+    Salvar Configurações
+</button>
 
-        <button onclick="window.fecharModal()"
-                style="position:absolute; top:10px; right:10px;">
-            ✖
-        </button>
+<span id="statusConfig" style="margin-left:10px;"></span>
 
-        <h3>Modal de Pesagem</h3>
+</form>
 
-        <p>
-            Ticket selecionado:
-            <strong id="ticketSelecionado"></strong>
-        </p>
-
-        <p><em>Se você está vendo isso, o modal FUNCIONA.</em></p>
-
-    </div>
-</div>
-
-<!-- ====================================================== -->
-<!-- JS GLOBAL (OBRIGATÓRIO PARA FETCH) -->
-<!-- ====================================================== -->
 <script>
-/* FUNÇÕES GLOBAIS */
+function salvarConfigLancamento() {
+    const form = document.getElementById('formConfigLancamento');
+    const data = new FormData(form);
 
-window.abrirModalPesagem = function(ticket) {
-    console.log('abrirModalPesagem chamado:', ticket);
+    fetch('/app/controllers/salvar_config_lancamento.php', {
+        method: 'POST',
+        body: data
+    })
+    .then(r => r.json())
+    .then(j => {
+        document.getElementById('statusConfig').innerText = j.ok ? '✔ Salvo' : 'Erro';
+    });
+}
+</script>
 
-    const span = document.getElementById('ticketSelecionado');
-    span.innerText = ticket;
+<hr>
 
-    document.getElementById('modalPesagem').style.display = 'block';
-};
+<!-- ====================================================== -->
+<!-- CAPTURA -->
+<!-- ====================================================== -->
+<h4>Captura de Pesagens</h4>
 
-window.fecharModal = function() {
-    document.getElementById('modalPesagem').style.display = 'none';
+<button id="btnCapturar" class="btn btn-success mb-3">
+    Capturar Pesagens do Período
+</button>
+
+<div id="resultadoCaptura"></div>
+
+<script>
+document.getElementById('btnCapturar').onclick = () => {
+    fetch("/app/controllers/captura_controller.php?periodo_id=<?= $id ?>")
+        .then(r => r.text())
+        .then(html => document.getElementById('resultadoCaptura').innerHTML = html);
 };
 </script>
+
+</div>
 
 <?php require_once __DIR__ . '/app/views/footer.php'; ?>
