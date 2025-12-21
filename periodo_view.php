@@ -130,6 +130,23 @@ require_once __DIR__ . '/app/views/header.php';
 
     <hr>
 
+<script>
+/* FUNÇÕES GLOBAIS — NECESSÁRIO PARA HTML INJETADO VIA FETCH */
+
+window.abrirModalPesagem = function(ticket) {
+    const span = document.getElementById('ticketSelecionado');
+    if (span) {
+        span.innerText = ticket;
+    }
+    document.getElementById('modalPesagem').style.display = 'block';
+};
+
+window.fecharModal = function() {
+    document.getElementById('modalPesagem').style.display = 'none';
+};
+</script>
+
+    
     <!-- CAPTURA DE PESAGENS -->
     <h4>Captura de Pesagens</h4>
 
@@ -201,15 +218,6 @@ require_once __DIR__ . '/app/views/header.php';
     </div>
 </div>
 
-<script>
-function abrirModalPesagem(ticket) {
-    document.getElementById('ticketSelecionado').innerText = ticket;
-    document.getElementById('modalPesagem').style.display = 'block';
-}
 
-function fecharModal() {
-    document.getElementById('modalPesagem').style.display = 'none';
-}
-</script>
 
 <?php require_once __DIR__ . '/app/views/footer.php'; ?>
