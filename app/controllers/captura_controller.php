@@ -9,7 +9,6 @@ $db = Database::connect();
 // 1. VALIDAR PERIODO_ID
 // ======================================================
 $periodoId = isset($_GET['periodo_id']) ? (int)$_GET['periodo_id'] : 0;
-
 if ($periodoId <= 0) {
     echo "<div class='alert alert-danger'>Período inválido.</div>";
     exit;
@@ -18,17 +17,13 @@ if ($periodoId <= 0) {
 // ======================================================
 // 2. BUSCAR PERÍODO + OPERAÇÃO
 // ======================================================
-$sql = "
-    SELECT 
-        p.inicio,
-        p.fim,
-        o.navio
+$stmt = $db->prepare("
+    SELECT p.inicio, p.fim, o.navio
     FROM periodos p
     JOIN operacoes o ON o.id = p.operacao_id
-    WHERE p.id = :id
-";
-$stmt = $db->prepare($sql);
-$stmt->execute([':id' => $periodoId]);
+    WHERE p.id = ?
+");
+$stmt->execute([$periodoId]);
 $dados = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$dados) {
@@ -37,7 +32,7 @@ if (!$dados) {
 }
 
 // ======================================================
-// 3. CONVERTER DATAS PARA FORMATO BR
+// 3. DATAS PARA FORMATO BR
 // ======================================================
 function dataParaBR($dataISO) {
     $dt = DateTime::createFromFormat('Y-m-d H:i', $dataISO);
@@ -49,7 +44,21 @@ $dataFim    = dataParaBR($dados['fim']);
 $navio      = trim($dados['navio']);
 
 // ======================================================
-// 4. CHAMAR BACKEND NODE (POSEIDON)
+// 4. BUSCAR TICKETS JÁ CONFERIDOS
+// ======================================================
+$stmt = $db->prepare("
+    SELECT ticket
+    FROM pesagens_conferidas
+    WHERE periodo_id = ?
+");
+$stmt->execute([$periodoId]);
+$ticketsConferidos = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+// Converte para lookup rápido
+$mapConferidos = array_flip($ticketsConferidos);
+
+// ======================================================
+// 5. CHAMAR BACKEND NODE (POSEIDON)
 // ======================================================
 $urlNode = "https://sistema-conferentes-node.onrender.com/poseidon/pesagens";
 
@@ -64,9 +73,7 @@ curl_setopt_array($ch, [
     CURLOPT_POST           => true,
     CURLOPT_POSTFIELDS     => $payload,
     CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_HTTPHEADER     => [
-        'Content-Type: application/json'
-    ]
+    CURLOPT_HTTPHEADER     => ['Content-Type: application/json']
 ]);
 
 $response = curl_exec($ch);
@@ -79,14 +86,13 @@ if ($response === false || $httpCode !== 200) {
 }
 
 $data = json_decode($response, true);
-
-if (!$data || !isset($data['ok']) || !$data['ok']) {
+if (!$data || empty($data['ok'])) {
     echo "<div class='alert alert-danger'>Resposta inválida do servidor.</div>";
     exit;
 }
 
 // ======================================================
-// 5. EXIBIR RESULTADO EM TABELA (COM LUPA FUNCIONAL)
+// 6. TABELA DE PESAGENS (COM LUPA CONDICIONAL)
 // ======================================================
 echo "<h4>Pesagens do período</h4>";
 echo "<p><strong>Navio:</strong> {$navio}</p>";
@@ -105,29 +111,48 @@ echo "<tr>
 
 foreach ($data['registros'] as $r) {
 
-    $ticket = htmlspecialchars($r['ticket_id']);
-    $placa  = htmlspecialchars($r['placa']);
-    $peso   = htmlspecialchars($r['peso_liquido']);
+    $ticket  = (string)$r['ticket_id'];
+    $placa   = htmlspecialchars($r['placa']);
+    $peso    = htmlspecialchars($r['peso_liquido']);
     $entrada = htmlspecialchars($r['entrada']);
     $saida   = htmlspecialchars($r['saida']);
 
-    echo "<tr>
-            <td style='text-align:center'>
-                <button
-                    title='Conferir pesagem'
-                    onclick=\"abrirModalPesagem(
-                        '{$ticket}',
-                        '{$placa}',
-                        '{$peso}'
-                    )\"
-                >🔍</button>
-            </td>
-            <td>{$ticket}</td>
-            <td>{$placa}</td>
-            <td>{$entrada}</td>
-            <td>{$saida}</td>
-            <td>{$peso}</td>
-          </tr>";
+    $jaConferida = isset($mapConferidos[$ticket]);
+
+    // Estilo visual
+    $styleLinha = $jaConferida
+        ? "style='background:#f0f0f0;color:#2e7d32;'"
+        : "";
+
+    echo "<tr {$styleLinha}>";
+
+    echo "<td style='text-align:center'>";
+
+    if ($jaConferida) {
+        // Lupa desabilitada
+        echo "<span title='Pesagem já conferida'
+                   style='opacity:0.4; cursor:not-allowed;'>🔍</span>";
+    } else {
+        // Lupa ativa
+        echo "<button
+                title='Conferir pesagem'
+                onclick=\"abrirModalPesagem(
+                    '{$ticket}',
+                    '{$placa}',
+                    '{$peso}'
+                )\"
+              >🔍</button>";
+    }
+
+    echo "</td>";
+
+    echo "<td>{$ticket}</td>
+          <td>{$placa}</td>
+          <td>{$entrada}</td>
+          <td>{$saida}</td>
+          <td>{$peso}</td>";
+
+    echo "</tr>";
 }
 
 echo "</table>";
