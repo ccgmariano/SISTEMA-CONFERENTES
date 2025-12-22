@@ -6,15 +6,15 @@ require_once __DIR__ . '/app/database.php';
 $db = Database::connect();
 
 // ======================================================
-// 1) ID DO PERÍODO
+// 1. RECEBE ID DO PERÍODO
 // ======================================================
-$periodoId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-if ($periodoId <= 0) {
+$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+if ($id <= 0) {
     die('Período inválido.');
 }
 
 // ======================================================
-// 2) BUSCAR PERÍODO + OPERAÇÃO (campos completos)
+// 2. BUSCA PERÍODO + OPERAÇÃO
 // ======================================================
 $stmt = $db->prepare("
     SELECT 
@@ -29,7 +29,7 @@ $stmt = $db->prepare("
     JOIN operacoes o ON o.id = p.operacao_id
     WHERE p.id = ?
 ");
-$stmt->execute([$periodoId]);
+$stmt->execute([$id]);
 $periodo = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$periodo) {
@@ -37,40 +37,10 @@ if (!$periodo) {
 }
 
 // ======================================================
-// 3) FUNÇÕES ESCALADAS (opcional, já estava no seu arquivo)
+// 3. DADOS PARA CONFIGURAÇÃO DE LANÇAMENTOS
 // ======================================================
-$stmt = $db->prepare("
-    SELECT
-        pf.id AS periodo_funcao_id,
-        f.nome AS funcao_nome
-    FROM periodo_funcoes pf
-    JOIN funcoes f ON f.id = pf.funcao_id
-    WHERE pf.periodo_id = ?
-    ORDER BY f.nome
-");
-$stmt->execute([$periodoId]);
-$funcoesPeriodo = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// ======================================================
-// 4) LISTAS PARA CONFIGURAÇÕES (tabelas EXISTENTES)
-// ======================================================
-$equipamentos = $db->query("SELECT id, nome FROM equipamentos ORDER BY nome")->fetchAll(PDO::FETCH_ASSOC);
-$decks        = $db->query("SELECT id, nome FROM decks ORDER BY nome")->fetchAll(PDO::FETCH_ASSOC);
-$origens      = $db->query("SELECT id, nome FROM origem_destino ORDER BY nome")->fetchAll(PDO::FETCH_ASSOC);
-
-// ======================================================
-// 5) CARREGAR CONFIG ATUAL DO PERÍODO (se existir)
-// ======================================================
-$stmt = $db->prepare("SELECT * FROM periodo_config_lancamentos WHERE periodo_id = ? LIMIT 1");
-$stmt->execute([$periodoId]);
-$config = $stmt->fetch(PDO::FETCH_ASSOC);
-
-// defaults
-$cfgTerno = $config['terno'] ?? '';
-$cfgPorao = $config['porao'] ?? '';
-$cfgDeckId = $config['deck_id'] ?? '';
-$cfgEquipId = $config['equipamento_id'] ?? '';
-$cfgOrigId = $config['origem_destino_id'] ?? '';
+$equipamentos = $db->query("SELECT id, nome FROM equipamentos WHERE ativo = 1 ORDER BY nome")->fetchAll(PDO::FETCH_ASSOC);
+$origens = $db->query("SELECT id, nome FROM origem_destino ORDER BY nome")->fetchAll(PDO::FETCH_ASSOC);
 
 require_once __DIR__ . '/app/views/header.php';
 ?>
@@ -81,7 +51,10 @@ require_once __DIR__ . '/app/views/header.php';
 
     <ul class="list-group mb-4">
         <li class="list-group-item"><strong>Data:</strong> <?= htmlspecialchars($periodo['data']) ?></li>
-        <li class="list-group-item"><strong>Horário:</strong> <?= htmlspecialchars($periodo['inicio']) ?> → <?= htmlspecialchars($periodo['fim']) ?></li>
+        <li class="list-group-item">
+            <strong>Horário:</strong>
+            <?= htmlspecialchars($periodo['inicio']) ?> → <?= htmlspecialchars($periodo['fim']) ?>
+        </li>
         <li class="list-group-item"><strong>Empresa:</strong> <?= htmlspecialchars($periodo['empresa']) ?></li>
         <li class="list-group-item"><strong>Navio:</strong> <?= htmlspecialchars($periodo['navio']) ?></li>
         <li class="list-group-item"><strong>Tipo:</strong> <?= htmlspecialchars($periodo['tipo_operacao']) ?></li>
@@ -91,93 +64,53 @@ require_once __DIR__ . '/app/views/header.php';
 
     <hr>
 
-    <!-- ======================================================
-         CONFIGURAÇÕES DO LANÇAMENTO (NA MESMA PÁGINA)
-         ====================================================== -->
-    <h4>Configurações dos Lançamentos</h4>
+    <!-- CONFIGURAÇÕES DE LANÇAMENTO -->
+    <h4>Configurações de Lançamento</h4>
 
-    <form id="formConfigLanc" method="POST" action="/app/controllers/config_lancamentos_controller.php" class="mb-3">
-        <input type="hidden" name="periodo_id" value="<?= (int)$periodoId ?>">
-
-        <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
-            <div>
-                <label><strong>Terno</strong></label><br>
-                <input type="number" name="terno" min="1" style="width:120px" value="<?= htmlspecialchars($cfgTerno) ?>">
-            </div>
-
-            <div>
-                <label><strong>Equipamento</strong></label><br>
-                <select name="equipamento_id" style="width:220px">
-                    <option value="">-- selecione --</option>
-                    <?php foreach ($equipamentos as $e): ?>
-                        <option value="<?= (int)$e['id'] ?>" <?= ((string)$cfgEquipId === (string)$e['id']) ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($e['nome']) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div>
-                <label><strong>Porão</strong></label><br>
-                <input type="number" name="porao" min="1" style="width:120px" value="<?= htmlspecialchars($cfgPorao) ?>">
-            </div>
-
-            <div>
-                <label><strong>Deck</strong></label><br>
-                <select name="deck_id" style="width:160px">
-                    <option value="">-- selecione --</option>
-                    <?php foreach ($decks as $d): ?>
-                        <option value="<?= (int)$d['id'] ?>" <?= ((string)$cfgDeckId === (string)$d['id']) ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($d['nome']) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div>
-                <label><strong>Origem/Destino</strong></label><br>
-                <select name="origem_destino_id" style="width:220px">
-                    <option value="">-- selecione --</option>
-                    <?php foreach ($origens as $o): ?>
-                        <option value="<?= (int)$o['id'] ?>" <?= ((string)$cfgOrigId === (string)$o['id']) ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($o['nome']) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div>
-                <button type="submit" class="btn btn-primary">Salvar Configuração</button>
-            </div>
+    <div class="row mb-3">
+        <div class="col">
+            <label>Terno</label>
+            <input type="number" id="cfg_terno" class="form-control" value="1">
         </div>
 
-        <small class="text-muted">
-            Observação: por enquanto ainda existe “Salvar Configuração”. No próximo passo, vamos eliminar esse clique e aplicar automaticamente.
-        </small>
-    </form>
+        <div class="col">
+            <label>Porão</label>
+            <input type="number" id="cfg_porao" class="form-control">
+        </div>
 
-    <div id="msgConfigLanc"></div>
+        <div class="col">
+            <label>Deck</label>
+            <input type="text" id="cfg_deck" class="form-control">
+        </div>
 
-    <script>
-    // salva config sem sair da página (não redireciona)
-    document.getElementById('formConfigLanc').addEventListener('submit', function(e){
-        e.preventDefault();
-        const form = this;
-        const msg = document.getElementById('msgConfigLanc');
-        msg.innerHTML = "";
+        <div class="col">
+            <label>Equipamento</label>
+            <select id="cfg_equipamento" class="form-control">
+                <option value="">-- selecione --</option>
+                <?php foreach ($equipamentos as $e): ?>
+                    <option value="<?= $e['nome'] ?>"><?= htmlspecialchars($e['nome']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
 
-        fetch(form.action, { method: "POST", body: new FormData(form) })
-            .then(r => r.text())
-            .then(html => { msg.innerHTML = html; })
-            .catch(() => { msg.innerHTML = "<div class='alert alert-danger'>Erro ao salvar configuração.</div>"; });
-    });
-    </script>
+        <div class="col">
+            <label>Origem / Destino</label>
+            <select id="cfg_origem" class="form-control">
+                <option value="">-- selecione --</option>
+                <?php foreach ($origens as $o): ?>
+                    <option value="<?= $o['nome'] ?>"><?= htmlspecialchars($o['nome']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+    </div>
+
+    <small class="text-muted">
+        Essas configurações serão usadas automaticamente ao clicar na lupa de cada pesagem.
+    </small>
 
     <hr>
 
-    <!-- ======================================================
-         CAPTURA DE PESAGENS
-         ====================================================== -->
+    <!-- CAPTURA DE PESAGENS -->
     <h4>Captura de Pesagens</h4>
 
     <button id="btnCapturar" class="btn btn-success w-100 mb-3">
@@ -187,87 +120,88 @@ require_once __DIR__ . '/app/views/header.php';
     <div id="resultadoCaptura"></div>
 
     <script>
-    (function(){
-        const btn = document.getElementById('btnCapturar');
+    document.getElementById('btnCapturar').addEventListener('click', function () {
+        const btn = this;
         const divResultado = document.getElementById('resultadoCaptura');
 
-        if (!btn) return;
+        btn.disabled = true;
+        btn.innerText = "Consultando Poseidon...";
 
-        btn.addEventListener('click', function () {
-            btn.disabled = true;
-            btn.innerText = "Consultando Poseidon...";
-
-            fetch("/app/controllers/captura_controller.php?periodo_id=<?= (int)$periodoId ?>")
-                .then(resp => resp.text())
-                .then(html => { divResultado.innerHTML = html; })
-                .catch(() => {
-                    divResultado.innerHTML = "<div class='alert alert-danger'>Erro ao consultar pesagens.</div>";
-                })
-                .finally(() => {
-                    btn.disabled = false;
-                    btn.innerText = "Capturar Pesagens do Período";
-                });
-        });
-    })();
+        fetch("/app/controllers/captura_controller.php?periodo_id=<?= (int)$id ?>")
+            .then(resp => resp.text())
+            .then(html => {
+                divResultado.innerHTML = html;
+            })
+            .catch(() => {
+                divResultado.innerHTML =
+                    "<div class='alert alert-danger'>Erro ao consultar pesagens.</div>";
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerText = "Capturar Pesagens do Período";
+            });
+    });
     </script>
 
-    <hr>
-
-    <!-- ======================================================
-         PESAGENS CONFERIDAS (do seu controller existente)
-         ====================================================== -->
-    <h4>Pesagens Conferidas</h4>
-
-    <div id="pesagensConferidas">
-        <?php
-            $_GET['periodo_id'] = $periodoId;
-            include $_SERVER['DOCUMENT_ROOT'] . '/app/controllers/pesagens_list.php';
-        ?>
-    </div>
-
-    <hr>
-
-    <!-- ======================================================
-         FUNÇÕES E CONFERENTES
-         ====================================================== -->
-    <h3>Funções escaladas</h3>
-
-    <?php if (empty($funcoesPeriodo)): ?>
-        <p><em>Nenhuma função foi escalada para este período.</em></p>
-    <?php else: ?>
-        <?php foreach ($funcoesPeriodo as $f): ?>
-            <fieldset style="margin-bottom:15px; padding:10px; border:1px solid #999;">
-                <legend><strong><?= htmlspecialchars($f['funcao_nome']) ?></strong></legend>
-
-                <?php
-                $stmt = $db->prepare("
-                    SELECT a.nome
-                    FROM periodo_conferentes pc
-                    JOIN associados a ON a.id = pc.associado_id
-                    WHERE pc.periodo_funcao_id = ?
-                    ORDER BY a.nome
-                ");
-                $stmt->execute([$f['periodo_funcao_id']]);
-                $conferentes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                ?>
-
-                <?php if (empty($conferentes)): ?>
-                    <p>Nenhum conferente atribuído.</p>
-                <?php else: ?>
-                    <ul>
-                        <?php foreach ($conferentes as $c): ?>
-                            <li><?= htmlspecialchars($c['nome']) ?></li>
-                        <?php endforeach; ?>
-                    </ul>
-                <?php endif; ?>
-            </fieldset>
-        <?php endforeach; ?>
-    <?php endif; ?>
-
-    <a href="/operacao_view.php?id=<?= (int)$periodo['operacao_id'] ?>" class="btn btn-secondary mt-4">
-        Voltar à Operação
-    </a>
-
 </div>
+
+<!-- MODAL DE CONFERÊNCIA -->
+<div id="modalPesagem" style="
+    display:none;
+    position:fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background:rgba(0,0,0,0.5);
+    z-index:9999;
+">
+    <div style="
+        background:#fff;
+        width:420px;
+        margin:8% auto;
+        padding:20px;
+        border-radius:6px;
+    ">
+        <h4>Conferência de Pesagem</h4>
+        <div id="conteudoModalPesagem"></div>
+
+        <div style="text-align:right; margin-top:15px;">
+            <button onclick="fecharModalPesagem()" class="btn btn-secondary">
+                Fechar
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function abrirModalPesagem(dados) {
+
+    const cfg = {
+        terno: document.getElementById('cfg_terno').value,
+        porao: document.getElementById('cfg_porao').value,
+        deck: document.getElementById('cfg_deck').value,
+        equipamento: document.getElementById('cfg_equipamento').value,
+        origem: document.getElementById('cfg_origem').value
+    };
+
+    let html = `
+        <p><strong>Ticket:</strong> ${dados.ticket}</p>
+        <p><strong>Placa:</strong> ${dados.placa}</p>
+        <p><strong>Peso Líquido:</strong> ${dados.peso}</p>
+        <hr>
+        <p><strong>Terno:</strong> ${cfg.terno}</p>
+        <p><strong>Porão:</strong> ${cfg.porao}</p>
+        <p><strong>Deck:</strong> ${cfg.deck}</p>
+        <p><strong>Equipamento:</strong> ${cfg.equipamento}</p>
+        <p><strong>Origem/Destino:</strong> ${cfg.origem}</p>
+    `;
+
+    document.getElementById('conteudoModalPesagem').innerHTML = html;
+    document.getElementById('modalPesagem').style.display = 'block';
+}
+
+function fecharModalPesagem() {
+    document.getElementById('modalPesagem').style.display = 'none';
+}
+</script>
 
 <?php require_once __DIR__ . '/app/views/footer.php'; ?>
