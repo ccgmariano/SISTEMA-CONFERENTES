@@ -128,7 +128,8 @@ function abrirModalPesagem(a, b, c) {
 }
 
 function confirmarPesagem() {
-    fetch('/app/controllers/confirmar_pesagem.php', {
+    fetch('app/controllers/confirmar_pesagem.php', {
+
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
