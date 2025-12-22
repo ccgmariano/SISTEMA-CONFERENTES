@@ -64,16 +64,11 @@ require_once __DIR__ . '/app/views/header.php';
     </select>
 </div>
 
-<p style="font-size:12px;color:#666;margin-top:5px;">
-    Essas configurações serão aplicadas automaticamente ao conferir as pesagens.
-</p>
-
 <hr>
 
 <h4>Captura de Pesagens</h4>
 
 <button id="btnCapturar">Capturar Pesagens do Período</button>
-
 <div id="resultadoCaptura"></div>
 
 <script>
@@ -91,36 +86,52 @@ document.getElementById('btnCapturar').onclick = () => {
     <div style="background:#fff;width:420px;margin:8% auto;padding:20px;border-radius:6px">
         <h4>Conferência de Pesagem</h4>
         <div id="conteudoModal"></div>
+        <button onclick="confirmarPesagem()">Confirmar Pesagem</button>
         <button onclick="fecharModal()">Fechar</button>
     </div>
 </div>
 
 <script>
-function abrirModalPesagem(btn) {
+let pesagemAtual = {};
 
-    const ticket = btn.dataset.ticket;
-    const placa  = btn.dataset.placa;
-    const peso   = btn.dataset.peso;
+function abrirModalPesagem(a, b, c) {
 
-    const terno = document.getElementById('cfg_terno').value;
-    const porao = document.getElementById('cfg_porao').value;
-    const deck  = document.getElementById('cfg_deck').value;
-    const equip = document.getElementById('cfg_equipamento').value;
-    const orig  = document.getElementById('cfg_origem').value;
+    if (typeof a === 'string') {
+        pesagemAtual.ticket = a;
+        pesagemAtual.placa  = b;
+        pesagemAtual.peso   = c;
+    } else {
+        pesagemAtual.ticket = a.dataset.ticket;
+        pesagemAtual.placa  = a.dataset.placa;
+        pesagemAtual.peso   = a.dataset.peso;
+    }
+
+    pesagemAtual.terno = document.getElementById('cfg_terno').value;
+    pesagemAtual.porao = document.getElementById('cfg_porao').value;
+    pesagemAtual.deck  = document.getElementById('cfg_deck').value;
+    pesagemAtual.equip = document.getElementById('cfg_equipamento').value;
+    pesagemAtual.orig  = document.getElementById('cfg_origem').value;
 
     document.getElementById('conteudoModal').innerHTML = `
-        <p><strong>Ticket:</strong> ${ticket}</p>
-        <p><strong>Placa:</strong> ${placa}</p>
-        <p><strong>Peso Líquido:</strong> ${peso}</p>
-        <hr>
-        <p><strong>Terno:</strong> ${terno}</p>
-        <p><strong>Porão:</strong> ${porao}</p>
-        <p><strong>Deck:</strong> ${deck}</p>
-        <p><strong>Equipamento:</strong> ${equip}</p>
-        <p><strong>Origem/Destino:</strong> ${orig}</p>
+        <p><strong>Ticket:</strong> ${pesagemAtual.ticket}</p>
+        <p><strong>Placa:</strong> ${pesagemAtual.placa}</p>
+        <p><strong>Peso Líquido:</strong> ${pesagemAtual.peso}</p>
     `;
 
     document.getElementById('modalPesagem').style.display = 'block';
+}
+
+function confirmarPesagem() {
+    fetch('/app/controllers/confirmar_pesagem.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            periodo_id: <?= $id ?>,
+            ...pesagemAtual
+        })
+    });
+
+    fecharModal();
 }
 
 function fecharModal() {
