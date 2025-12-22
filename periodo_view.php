@@ -116,6 +116,12 @@ function abrirModalPesagem(a, b, c) {
         <p><strong>Ticket:</strong> ${pesagemAtual.ticket}</p>
         <p><strong>Placa:</strong> ${pesagemAtual.placa}</p>
         <p><strong>Peso Líquido:</strong> ${pesagemAtual.peso}</p>
+        <hr>
+    <p><strong>Terno:</strong> ${pesagemAtual.terno}</p>
+    <p><strong>Porão:</strong> ${pesagemAtual.porao}</p>
+    <p><strong>Deck:</strong> ${pesagemAtual.deck}</p>
+    <p><strong>Equipamento:</strong> ${pesagemAtual.equip}</p>
+    <p><strong>Origem/Destino:</strong> ${pesagemAtual.orig}</p>
     `;
 
     document.getElementById('modalPesagem').style.display = 'block';
