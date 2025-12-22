@@ -1,15 +1,17 @@
 <?php
-require_once __DIR__ . '/app/database.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
+require_login();
+require_once $_SERVER['DOCUMENT_ROOT'] . '/app/database.php';
 
 $db = Database::connect();
 
-$tabelas = $db->query("
-    SELECT name 
-    FROM sqlite_master 
-    WHERE type='table'
-    ORDER BY name
-")->fetchAll(PDO::FETCH_COLUMN);
+$stmt = $db->query("
+    SELECT periodo_id, ticket
+    FROM pesagens
+    ORDER BY criado_em DESC
+    LIMIT 5
+");
 
 echo "<pre>";
-print_r($tabelas);
+print_r($stmt->fetchAll(PDO::FETCH_ASSOC));
 echo "</pre>";
