@@ -3,6 +3,14 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_login();
 require_once $_SERVER['DOCUMENT_ROOT'] . '/app/database.php';
 
+/* ===== PASSO 1 — LOG DE CHEGADA (TEMPORÁRIO) ===== */
+file_put_contents(
+    $_SERVER['DOCUMENT_ROOT'] . '/tmp/debug_confirmar.log',
+    date('Y-m-d H:i:s') . " CHEGOU\n",
+    FILE_APPEND
+);
+/* =============================================== */
+
 $db = Database::connect();
 
 $data = json_decode(file_get_contents('php://input'), true);
