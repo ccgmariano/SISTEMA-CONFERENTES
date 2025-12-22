@@ -108,16 +108,20 @@ foreach ($data['registros'] as $r) {
 
     $jaConferida = in_array($r['ticket_id'], $ticketsConferidos);
 
-    $icone = $jaConferida
-        ? "<span style='color:#999'>🔍</span>"
-        : "<button onclick=\"abrirModalPesagem(
-                '{$r['ticket_id']}',
-                '{$r['placa']}',
-                '{$r['peso_liquido']}',
-                '{$r['saida']}'
-           )\">🔍</button>";
-
-    $style = $jaConferida ? "style='color:#999;background:#f4f4f4'" : "";
+    if ($jaConferida) {
+        $icone = "<span style='color:#999'>🔍</span>";
+        $style = "style='color:#999;background:#f4f4f4'";
+    } else {
+        $icone = "
+            <button
+                onclick=\"abrirModalPesagem(this)\"
+                data-ticket=\"{$r['ticket_id']}\"
+                data-placa=\"{$r['placa']}\"
+                data-peso=\"{$r['peso_liquido']}\">
+                🔍
+            </button>";
+        $style = "";
+    }
 
     echo "<tr $style>
             <td>$icone</td>
