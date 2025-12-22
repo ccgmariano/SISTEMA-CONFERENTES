@@ -81,7 +81,7 @@ if (!$data || empty($data['registros'])) {
 }
 
 // --------------------------------------------------
-// 5. BUSCAR TICKETS JÁ CONFERIDOS
+// 5. BUSCAR TICKETS JÁ CONFERIDOS (NORMALIZADO)
 // --------------------------------------------------
 $stmt = $db->prepare("
     SELECT ticket 
@@ -89,7 +89,15 @@ $stmt = $db->prepare("
     WHERE periodo_id = ?
 ");
 $stmt->execute([$periodoId]);
-$ticketsConferidos = array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'ticket');
+
+$ticketsRaw = array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'ticket');
+
+// normaliza para comparação robusta (string + trim)
+$ticketsSet = [];
+foreach ($ticketsRaw as $t) {
+    $key = trim((string)$t);
+    if ($key !== '') $ticketsSet[$key] = true;
+}
 
 // --------------------------------------------------
 // 6. RENDERIZAÇÃO
@@ -106,30 +114,27 @@ echo "<tr>
 
 foreach ($data['registros'] as $r) {
 
-    $jaConferida = in_array($r['ticket_id'], $ticketsConferidos);
+    $ticketPoseidon = trim((string)$r['ticket_id']);
+    $jaConferida = isset($ticketsSet[$ticketPoseidon]);
 
-    if ($jaConferida) {
-        $icone = "<span style='color:#999'>🔍</span>";
-        $style = "style='color:#999;background:#f4f4f4'";
-    } else {
-        $icone = "
-            <button
-                onclick=\"abrirModalPesagem(this)\"
-                data-ticket=\"{$r['ticket_id']}\"
-                data-placa=\"{$r['placa']}\"
-                data-peso=\"{$r['peso_liquido']}\">
-                🔍
-            </button>";
-        $style = "";
-    }
+    $icone = $jaConferida
+        ? "<span style='color:#999'>🔍</span>"
+        : "<button onclick=\"abrirModalPesagem(
+                '" . htmlspecialchars((string)$r['ticket_id'], ENT_QUOTES, 'UTF-8') . "',
+                '" . htmlspecialchars((string)$r['placa'], ENT_QUOTES, 'UTF-8') . "',
+                '" . htmlspecialchars((string)$r['peso_liquido'], ENT_QUOTES, 'UTF-8') . "',
+                '" . htmlspecialchars((string)$r['saida'], ENT_QUOTES, 'UTF-8') . "'
+           )\">🔍</button>";
+
+    $style = $jaConferida ? "style='color:#999;background:#f4f4f4'" : "";
 
     echo "<tr $style>
             <td>$icone</td>
-            <td>{$r['ticket_id']}</td>
-            <td>{$r['placa']}</td>
-            <td>{$r['entrada']}</td>
-            <td>{$r['saida']}</td>
-            <td>{$r['peso_liquido']}</td>
+            <td>" . htmlspecialchars((string)$r['ticket_id'], ENT_QUOTES, 'UTF-8') . "</td>
+            <td>" . htmlspecialchars((string)$r['placa'], ENT_QUOTES, 'UTF-8') . "</td>
+            <td>" . htmlspecialchars((string)$r['entrada'], ENT_QUOTES, 'UTF-8') . "</td>
+            <td>" . htmlspecialchars((string)$r['saida'], ENT_QUOTES, 'UTF-8') . "</td>
+            <td>" . htmlspecialchars((string)$r['peso_liquido'], ENT_QUOTES, 'UTF-8') . "</td>
           </tr>";
 }
 
