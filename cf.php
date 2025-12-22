@@ -5,13 +5,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/app/database.php';
 
 $db = Database::connect();
 
-$stmt = $db->query("
-    SELECT periodo_id, ticket
-    FROM pesagens
-    ORDER BY criado_em DESC
-    LIMIT 5
-");
+$stmt = $db->prepare("DELETE FROM pesagens WHERE ticket = ?");
+$stmt->execute(['999999']);
 
-echo "<pre>";
-print_r($stmt->fetchAll(PDO::FETCH_ASSOC));
-echo "</pre>";
+echo "<pre>OK. Linhas removidas: " . $stmt->rowCount() . "</pre>";
