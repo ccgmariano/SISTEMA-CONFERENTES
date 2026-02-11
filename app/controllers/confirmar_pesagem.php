@@ -14,6 +14,15 @@ file_put_contents(
 $db = Database::connect();
 
 $data = json_decode(file_get_contents('php://input'), true);
+
+/* ===== PASSO 2 — LOG DO PAYLOAD (TEMPORÁRIO) ===== */
+file_put_contents(
+    $_SERVER['DOCUMENT_ROOT'] . '/tmp/debug_payload.log',
+    print_r($data, true),
+    FILE_APPEND
+);
+/* =============================================== */
+
 if (!$data) exit;
 
 $periodoId = (int)$data['periodo_id'];
